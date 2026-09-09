@@ -3,7 +3,7 @@
   "compileType": "miniprogram",
   "miniprogramRoot": "miniprogram/",
   "cloudfunctionRoot": "cloudfunctions/",
-  "appid": "touristappid",
+  "appid": "wx849cb467eacf7e7a",
   "projectname": "CycleCue",
   "setting": {
     "es6": true,
