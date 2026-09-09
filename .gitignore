@@ -6,6 +6,7 @@ coverage/
 .env.*
 !.env.example
 project.private.config.json
+.tcb/
 miniprogram/config/runtime.private.ts
 cloudfunctions/*/.env
 cloudfunctions/*/dist/

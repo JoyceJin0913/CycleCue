@@ -158,9 +158,9 @@ async function handleSendFailure(job: any, error: unknown, now: Date): Promise<v
 
 function buildTemplateData(job: any) {
   return {
-    thing1: { value: '每日记录提醒' },
-    time2: { value: `${job.localDate} ${job.scheduledLocalTime}` },
-    thing3: { value: '请进入小程序确认今天是否完成' },
+    thing1: { value: '每日记录' },
+    time15: { value: `${job.localDate} ${job.scheduledLocalTime}` },
+    thing5: { value: '请进入小程序完成今日记录' },
   }
 }
 
