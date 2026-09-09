@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "version": "2.1",
+  "envId": "cloud1-d4g9e75rt450f81b0",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "app-api",
+      "dir": "./cloudfunctions/app-api",
+      "runtime": "Nodejs20.19",
+      "handler": "dist/index.main",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "reminder-dispatcher",
+      "dir": "./cloudfunctions/reminder-dispatcher",
+      "runtime": "Nodejs20.19",
+      "handler": "dist/index.main",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "dispatch-every-minute",
+          "type": "timer",
+          "config": "0 * * * * * *"
+        }
+      ]
+    }
+  ]
+}

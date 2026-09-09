@@ -14,6 +14,7 @@ V1 不包含照片、系统日历、监督者、多药物或医疗建议。
 ## 文档
 
 - [V1 实施规格](./docs/v1/SPEC.md)
+- [V1 开发、部署与发布执行手册](./docs/v1/OPERATIONS_RUNBOOK.md)
 - [未来完整产品规格](./docs/future/FULL_SPEC.md)
 - [产品与技术研究](./docs/research/PRODUCT_AND_TECH_RESEARCH.md)
 
@@ -35,16 +36,20 @@ npm install
 npm run check
 ```
 
+## 开发与发布
+
+完整的首次初始化、日常开发、CloudBase 部署、小程序上传与正式发布流程见 [V1 运维与发布手册](./docs/v1/OPERATIONS_RUNBOOK.md)。
+
 ## 微信开发者工具
 
 1. 用微信开发者工具导入仓库根目录。
-2. 在本机 `project.private.config.json` 中配置真实 AppID。
-3. 开发时在 `miniprogram/config/runtime.ts` 填写开发环境 ID 和订阅模板 ID，提交前恢复为空；示例见相邻的 `runtime.example.ts`。
+2. AppID 已保存在 `project.config.json`；`project.private.config.json` 仅保存本机开发者工具偏好且不提交。
+3. `miniprogram/config/runtime.ts` 保存可公开的开发环境 ID 和订阅模板 ID；示例见相邻的 `runtime.example.ts`。
 4. 在 CloudBase 控制台配置云函数环境变量，参见 `infra/functions/environment.example.md`。
 5. 创建 CloudBase 集合、索引和函数权限，参见 `infra/`。
-6. 执行 `npm run build:functions` 后部署两个云函数。
+6. 按执行手册先部署 `app-api`；模板确认后再部署提醒调度器。
 
-真实 AppID、CloudBase 环境 ID、模板 ID 和任何密钥不得提交到 Git。
+AppID、CloudBase 环境 ID 和订阅模板 ID 是客户端可见标识符，可以提交。AppSecret、代码上传私钥、CloudBase/API 密钥和 `USER_ID_HASH_SECRET` 不得提交到 Git。
 
 ## 当前状态
 

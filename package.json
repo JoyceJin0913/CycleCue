@@ -8,9 +8,14 @@
     "test": "node --import tsx --test packages/domain/test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build:functions": "node scripts/build-functions.mjs",
+    "cloud:validate": "tcb validate",
+    "cloud:plan": "npm run build:functions && tcb deploy --only functions --dry-run",
+    "cloud:deploy:api": "npm run check && tcb fn deploy app-api --yes",
+    "cloud:deploy": "npm run check && tcb deploy --only functions --yes",
     "check": "npm run sync:domain && npm run test && npm run typecheck && npm run build:functions"
   },
   "devDependencies": {
+    "@cloudbase/cli": "3.8.1",
     "@types/node": "26.5.0",
     "esbuild": "0.28.2",
     "miniprogram-api-typings": "5.2.3",
