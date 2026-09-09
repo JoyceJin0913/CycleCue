@@ -9,4 +9,6 @@ project.private.config.json
 miniprogram/config/runtime.private.ts
 cloudfunctions/*/.env
 cloudfunctions/*/dist/
+cloudfunctions/*/index.js
+cloudfunctions/*/index.js.map
 npm-debug.log*

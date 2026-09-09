@@ -6,7 +6,9 @@ await Promise.all(
   functions.map((name) =>
     build({
       entryPoints: [`cloudfunctions/${name}/src/index.ts`],
-      outfile: `cloudfunctions/${name}/dist/index.js`,
+      // CloudBase Node handlers use the <file>.<export> form and do not
+      // accept a nested path such as dist/index.main.
+      outfile: `cloudfunctions/${name}/index.js`,
       bundle: true,
       platform: 'node',
       target: 'node20',

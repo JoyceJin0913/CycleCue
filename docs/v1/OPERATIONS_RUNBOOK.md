@@ -31,9 +31,9 @@
 | CloudBase CLI | `3.8.1`，已安装，配置校验通过 |
 | 微信项目根目录 | 仓库根目录，内含 `project.config.json` |
 | 小程序源码 | `miniprogram/` |
-| 云函数 | `app-api`、`reminder-dispatcher`，尚待云端部署验证 |
+| 云函数 | `app-api` 已部署并可用；`reminder-dispatcher` 按计划暂未部署 |
 | 一次性订阅模板 | 尚未选择，客户端模板 ID 暂为空 |
-| 当前模拟器错误 | `FUNCTION_NOT_FOUND`，因为 `app-api` 尚未部署 |
+| 当前模拟器状态 | 原 `FUNCTION_NOT_FOUND` 原因已解除，等待开发者工具重新编译/重试验证真实调用链 |
 
 ### 可以提交 Git 的标识符
 
@@ -125,7 +125,7 @@ tcb env list --json
 
 ### C. 建立文档型数据库
 
-当前 `cloudbaserc.json` v2.1 的数据库编排只完整支持 PostgreSQL migration，不能可靠地声明式建立本项目的 NoSQL 集合、索引和安全规则。因此开发环境首次由 CloudBase 控制台建立，定义仍以仓库 `infra/database/` 为准。
+当前 `cloudbaserc.json` v2.1 的数据库编排只完整支持 PostgreSQL migration，不能可靠地声明式建立本项目的 NoSQL 集合、索引和安全规则。因此定义仍以仓库 `infra/database/` 为准。开发环境已由 Codex 通过 CloudBase CLI 的官方通用 API 完成首次建立和只读复查；控制台保留为人工回退入口。
 
 创建 6 个集合：
 
@@ -142,14 +142,14 @@ idempotency_requests
 
 创建组合索引：
 
-| 集合 | 索引字段 |
-|---|---|
-| `regimen_versions` | `ownerUserId ASC, effectiveFrom ASC` |
-| `dose_records` | `ownerUserId ASC, localDate ASC` |
-| `subscription_grants` | `recipientUserId ASC, templateKey ASC, status ASC, acceptedAt ASC` |
-| `reminder_jobs` | `status ASC, scheduledAt ASC` |
-| `reminder_jobs` | `recipientUserId ASC, status ASC, scheduledAt ASC` |
-| `idempotency_requests` | `userId ASC, expiresAt ASC` |
+| 集合 | 索引名 | 索引字段 |
+|---|---|---|
+| `regimen_versions` | `owner_effective_from` | `ownerUserId ASC, effectiveFrom ASC` |
+| `dose_records` | `owner_local_date` | `ownerUserId ASC, localDate ASC` |
+| `subscription_grants` | `recipient_template_status_accepted` | `recipientUserId ASC, templateKey ASC, status ASC, acceptedAt ASC` |
+| `reminder_jobs` | `status_scheduled_at` | `status ASC, scheduledAt ASC` |
+| `reminder_jobs` | `recipient_status_scheduled_at` | `recipientUserId ASC, status ASC, scheduledAt ASC` |
+| `idempotency_requests` | `user_expires_at` | `userId ASC, expiresAt ASC` |
 
 `infra/database/security-rules.example.json` 是总览文档，不是可以一次导入所有集合的规则文件；需要逐个集合设置。
 
@@ -166,7 +166,7 @@ npm run cloud:deploy:api
 tcb fn detail app-api --json
 ```
 
-部署后，在 CloudBase 控制台的 `app-api` 函数配置中设置：
+部署后，在 CloudBase 控制台或官方管理 API 中为 `app-api` 设置：
 
 ```text
 USER_ID_HASH_SECRET=<至少 32 字节随机值>
@@ -181,7 +181,9 @@ MINIPROGRAM_STATE=developer
 - 其他函数默认禁止客户端调用；
 - 定时触发器不受客户端函数调用规则影响。
 
-完成标志：开发者工具重新编译后不再出现 `FUNCTION_NOT_FOUND`，首次设置页可以打开并保存方案。
+当前云端配置已完成：函数为 `Active / Available`，运行时为 `Nodejs20.19`，入口为 `index.main`，两个环境变量均已配置且密钥值未落盘。完成标志仍以开发者工具重新编译后首次设置页可以打开并保存方案为准。
+
+CloudBase Node 函数入口必须使用 `<文件名>.<导出函数名>`，例如 `index.main`。构建产物应位于函数根目录，不能配置成 `dist/index.main`。
 
 不要用 `tcb fn invoke app-api` 代替小程序测试；直接调用通常没有微信 `OPENID/APPID` 上下文，不能证明真实调用链正常。
 
@@ -366,10 +368,10 @@ npm run cloud:deploy
 
 ## 9. 从当前状态继续
 
-- [ ] 1. 完成 `tcb login --flow device` 的微信公众平台账号授权；
-- [ ] 2. 用 `tcb env list --json` 确认目标环境可见；
-- [ ] 3. 创建 6 个集合、6 个组合索引和客户端拒绝规则；
-- [ ] 4. 仅部署 `app-api`，配置 `USER_ID_HASH_SECRET`；
+- [x] 1. 完成 `tcb login --flow device` 的微信公众平台账号授权；
+- [x] 2. 用 `tcb env list --json` 确认目标环境可见；
+- [x] 3. 创建 6 个集合、6 个组合索引和客户端拒绝规则；
+- [x] 4. 仅部署 `app-api`，配置 `USER_ID_HASH_SECRET`；
 - [ ] 5. 验证首次设置、今日记录和月历；
 - [ ] 6. 在公众平台选择一次性订阅模板；
 - [ ] 7. 完成模板字段映射，部署 dispatcher；

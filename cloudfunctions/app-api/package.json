@@ -2,7 +2,7 @@
   "name": "cycle-cue-app-api",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/index.js",
+  "main": "index.js",
   "dependencies": {
     "wx-server-sdk": "4.0.2"
   }

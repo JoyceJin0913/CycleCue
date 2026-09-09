@@ -8,7 +8,7 @@
       "name": "app-api",
       "dir": "./cloudfunctions/app-api",
       "runtime": "Nodejs20.19",
-      "handler": "dist/index.main",
+      "handler": "index.main",
       "timeout": 10,
       "memorySize": 256,
       "installDependency": true
@@ -17,7 +17,7 @@
       "name": "reminder-dispatcher",
       "dir": "./cloudfunctions/reminder-dispatcher",
       "runtime": "Nodejs20.19",
-      "handler": "dist/index.main",
+      "handler": "index.main",
       "timeout": 30,
       "memorySize": 256,
       "installDependency": true,
