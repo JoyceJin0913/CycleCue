@@ -4,7 +4,9 @@
       <view class="date">{{today.displayDate}}</view>
       <view wx:if="{{today.cycleDay}}" class="muted cycle">本周期第 {{today.cycleDay}} / 28 天</view>
     </view>
-    <button class="settings-link" bindtap="editPlan">计划设置</button>
+    <button class="settings-link" bindtap="editPlan">
+      <text>计划设置</text><text class="settings-arrow">›</text>
+    </button>
   </view>
 
   <view wx:if="{{loading}}" class="card state-card muted">正在同步今天的计划…</view>
@@ -52,8 +54,10 @@
   </view>
 
   <view wx:if="{{!loading && !errorMessage}}" class="reminder card">
-    <view class="reminder-label">微信提醒</view>
-    <view class="reminder-value">{{reminderText}}</view>
+    <view class="reminder-copy">
+      <view class="reminder-label">微信提醒</view>
+      <view class="reminder-value">{{reminderText}}</view>
+    </view>
     <button wx:if="{{!reminder.covered}}" class="reminder-button" bindtap="enableReminder">开启下一次提醒</button>
   </view>
 
