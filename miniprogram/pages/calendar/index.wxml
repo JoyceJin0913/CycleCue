@@ -1,0 +1,40 @@
+<view class="page calendar-page">
+  <view class="month-header">
+    <button class="month-button" bindtap="previousMonth">‹</button>
+    <view class="month-title">{{monthTitle}}</view>
+    <button class="month-button" bindtap="nextMonth">›</button>
+  </view>
+
+  <view class="weekday-row">
+    <view wx:for="{{weekdays}}" wx:key="*this" class="weekday">{{item}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading muted">正在加载日历…</view>
+  <view wx:elif="{{errorMessage}}" class="loading error" bindtap="refresh">{{errorMessage}} · 点击重试</view>
+
+  <view wx:else class="calendar-grid">
+    <view
+      wx:for="{{cells}}"
+      wx:key="localDate"
+      class="day {{item.inCurrentMonth ? '' : 'outside'}} {{selectedDate === item.localDate ? 'selected' : ''}}"
+      data-date="{{item.localDate}}"
+      bindtap="selectDate"
+    >
+      <view class="day-number">{{item.dayOfMonth}}</view>
+      <view class="indicator state-{{item.state}}">{{item.symbol}}</view>
+    </view>
+  </view>
+
+  <view class="legend card">
+    <view>● 待服</view>
+    <view>✓ 已服</view>
+    <view>— 未服</view>
+    <view>! 逾期未记录</view>
+    <view>○ 停药日</view>
+  </view>
+
+  <view wx:if="{{selectedDetail}}" class="detail card">
+    <view class="detail-date">{{selectedDetail.localDate}}</view>
+    <view class="muted">{{selectedDetail.description}}</view>
+  </view>
+</view>

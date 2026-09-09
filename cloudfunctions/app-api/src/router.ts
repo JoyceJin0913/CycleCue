@@ -1,0 +1,24 @@
+import type { AppContext } from './context'
+import { BusinessError } from './errors'
+import { bootstrapGet } from './actions/bootstrap-get'
+import { doseGetMonth } from './actions/dose-get-month'
+import { doseSetToday } from './actions/dose-set-today'
+import { regimenSave } from './actions/regimen-save'
+import { subscriptionGetStatus, subscriptionRegister } from './actions/subscription'
+
+type Handler = (context: AppContext, payload: any) => Promise<unknown>
+
+const handlers: Record<string, Handler> = {
+  'bootstrap.get': bootstrapGet,
+  'regimen.save': regimenSave,
+  'dose.setToday': doseSetToday,
+  'dose.getMonth': doseGetMonth,
+  'subscription.register': subscriptionRegister,
+  'subscription.getStatus': subscriptionGetStatus,
+}
+
+export async function routeAction(context: AppContext, action: string, payload: unknown) {
+  const handler = handlers[action]
+  if (!handler) throw new BusinessError('UNKNOWN_ACTION', '不支持的操作')
+  return handler(context, payload ?? {})
+}

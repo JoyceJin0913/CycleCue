@@ -1,0 +1,91 @@
+import {
+  addCalendarDays,
+  deriveDayViewState,
+  getPlanDay,
+  localDateInTimeZone,
+  localDateTimeToUtc,
+  parseLocalDate,
+  type LocalDate,
+} from '../../../packages/domain/src/index'
+import type { AppContext } from './context'
+import { getDocument, listRegimens, regimenForDate, stableId, type RegimenDocument } from './helpers'
+
+export interface DoseDocument {
+  _id: string
+  ownerUserId: string
+  regimenVersionId: string
+  localDate: string
+  status: 'taken' | 'not_taken'
+  firstRecordedAt: Date
+  lastChangedAt: Date
+}
+
+export function occurrenceId(regimenVersionId: string, localDate: string): string {
+  return stableId(regimenVersionId, localDate)
+}
+
+export async function reminderCoverage(context: AppContext) {
+  const result = await context.db
+    .collection('reminder_jobs')
+    .where({
+      recipientUserId: context.userId,
+      status: context.command.in(['pending', 'dispatching']),
+      scheduledAt: context.command.gt(context.serverNow),
+    })
+    .orderBy('scheduledAt', 'asc')
+    .limit(1)
+    .get()
+  const job = result.data[0]
+  return job
+    ? { covered: true, localDate: job.localDate, scheduledLocalTime: job.scheduledLocalTime }
+    : { covered: false, localDate: null, scheduledLocalTime: null }
+}
+
+function displayDate(localDate: string): string {
+  const [, month, day] = localDate.split('-')
+  return `${Number(month)} 月 ${Number(day)} 日`
+}
+
+export async function todayView(context: AppContext, regimens?: RegimenDocument[]) {
+  const today = localDateInTimeZone(context.serverNow)
+  const versions = regimens ?? (await listRegimens(context))
+  const regimen = regimenForDate(versions, today) ?? versions.find((item) => item.startDate > today) ?? null
+  if (!regimen) return { regimen: null, today: null }
+
+  const plan = getPlanDay(parseLocalDate(regimen.startDate), today)
+  const plannedAt = localDateTimeToUtc(today, regimen.scheduledLocalTime)
+  const record = await getDocument<DoseDocument>(
+    context.db.collection('dose_records'),
+    occurrenceId(regimen._id, today),
+  )
+  let nextActiveDate: LocalDate | null = null
+  for (let cursor = addCalendarDays(today, plan.status === 'active' ? 1 : 0), count = 0; count < 35; count += 1) {
+    const version = regimenForDate(versions, cursor) ?? regimen
+    if (getPlanDay(parseLocalDate(version.startDate), cursor).status === 'active') {
+      nextActiveDate = cursor
+      break
+    }
+    cursor = addCalendarDays(cursor, 1)
+  }
+
+  return {
+    regimen,
+    today: {
+      localDate: today,
+      displayDate: displayDate(today),
+      planStatus: plan.status,
+      viewState: deriveDayViewState({
+        planStatus: plan.status,
+        recordStatus: record?.status ?? null,
+        plannedAtMs: plannedAt.getTime(),
+        nowMs: context.serverNow.getTime(),
+      }),
+      cycleDay: plan.cycleDay ?? null,
+      scheduledLocalTime: regimen.scheduledLocalTime,
+      nextActiveDate,
+      recordStatus: record?.status ?? null,
+      firstRecordedAt: record?.firstRecordedAt?.toISOString() ?? null,
+      lastChangedAt: record?.lastChangedAt?.toISOString() ?? null,
+    },
+  }
+}

@@ -1,0 +1,102 @@
+.topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.date {
+  font-size: 36rpx;
+  font-weight: 650;
+}
+
+.cycle {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+}
+
+.settings-link {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #735a9d;
+  font-size: 26rpx;
+  line-height: 48rpx;
+}
+
+.settings-link::after {
+  border: 0;
+}
+
+.state-card {
+  margin-top: 40rpx;
+  padding: 64rpx 36rpx 36rpx;
+  text-align: center;
+}
+
+.state-kicker {
+  color: #735a9d;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.state-title {
+  margin-top: 14rpx;
+  font-size: 48rpx;
+  font-weight: 720;
+}
+
+.planned {
+  margin-top: 16rpx;
+  font-size: 27rpx;
+}
+
+.main-action {
+  margin-top: 58rpx;
+}
+
+.recorded-time {
+  margin: 48rpx 0 16rpx;
+  color: #5a765f;
+  font-size: 28rpx;
+}
+
+.reminder {
+  display: grid;
+  margin-top: 28rpx;
+  padding: 30rpx 32rpx;
+  grid-template-columns: 1fr auto;
+  gap: 8rpx 16rpx;
+}
+
+.reminder-label {
+  color: #77716b;
+  font-size: 24rpx;
+}
+
+.reminder-value {
+  grid-column: 1;
+  font-size: 28rpx;
+}
+
+.reminder-button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  margin: 0;
+  padding: 0 22rpx;
+  border-radius: 999rpx;
+  background: #f0eaf7;
+  color: #735a9d;
+  font-size: 24rpx;
+  line-height: 64rpx;
+}
+
+.reminder-button::after {
+  border: 0;
+}
+
+.medical-note {
+  margin: 32rpx 12rpx 0;
+  font-size: 24rpx;
+  line-height: 1.6;
+}

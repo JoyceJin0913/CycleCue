@@ -1,0 +1,33 @@
+<view class="page setup-page">
+  <view class="eyebrow">V1 · 21+7</view>
+  <view class="title">设置服药计划</view>
+  <view class="intro muted">告诉 CycleCue 当前药板从哪天开始，以及你每天希望几点收到微信提醒。</view>
+
+  <view class="card form-card">
+    <view class="field">
+      <view class="label">方案</view>
+      <view class="fixed-value">连续服药 21 天，停药 7 天</view>
+    </view>
+
+    <view class="field">
+      <view class="label">当前药板第一天</view>
+      <picker mode="date" value="{{startDate}}" end="{{today}}" bindchange="onDateChange">
+        <view class="picker-value">{{startDate}} <text>›</text></view>
+      </picker>
+    </view>
+
+    <view class="field last-field">
+      <view class="label">每日提醒时间</view>
+      <picker mode="time" value="{{scheduledLocalTime}}" bindchange="onTimeChange">
+        <view class="picker-value">{{scheduledLocalTime}} <text>›</text></view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="preview">从 {{startDate}} 开始，连续 21 天每天 {{scheduledLocalTime}} 记录，之后停 7 天。</view>
+
+  <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">
+    保存并开启下一次微信提醒
+  </button>
+  <view wx:if="{{errorMessage}}" class="error error-message">{{errorMessage}}</view>
+</view>

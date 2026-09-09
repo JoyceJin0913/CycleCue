@@ -1,0 +1,6 @@
+<view class="launch">
+  <view class="mark">C</view>
+  <view class="name">CycleCue</view>
+  <view class="muted">{{message}}</view>
+  <button wx:if="{{canRetry}}" class="retry" bindtap="retry">重试</button>
+</view>

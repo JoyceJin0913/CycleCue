@@ -1,0 +1,9 @@
+{
+  "desc": "CycleCue sitemap",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

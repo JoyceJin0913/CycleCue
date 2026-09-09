@@ -1,0 +1,44 @@
+<view class="page today-page">
+  <view class="topline">
+    <view>
+      <view class="date">{{today.displayDate}}</view>
+      <view wx:if="{{today.cycleDay}}" class="muted cycle">本周期第 {{today.cycleDay}} / 28 天</view>
+    </view>
+    <button class="settings-link" bindtap="editPlan">计划设置</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="card state-card muted">正在同步今天的计划…</view>
+
+  <view wx:elif="{{errorMessage}}" class="card state-card">
+    <view class="error">{{errorMessage}}</view>
+    <button class="secondary-button" bindtap="refresh">重新加载</button>
+  </view>
+
+  <view wx:else class="card state-card">
+    <view class="state-kicker">{{stateKicker}}</view>
+    <view class="state-title">{{stateTitle}}</view>
+    <view class="planned muted">{{stateDescription}}</view>
+
+    <block wx:if="{{showRecordActions}}">
+      <button class="primary-button main-action" bindtap="confirmTaken">确认已服</button>
+      <button class="secondary-button" bindtap="markNotTaken">记录今天未服</button>
+    </block>
+
+    <block wx:if="{{showEditRecord}}">
+      <view class="recorded-time">{{recordedTimeText}}</view>
+      <button class="secondary-button" bindtap="editRecord">修改今天的记录</button>
+    </block>
+
+    <button wx:if="{{today.viewState === 'break'}}" class="secondary-button" bindtap="openCalendar">查看完整日历</button>
+  </view>
+
+  <view wx:if="{{!loading && !errorMessage}}" class="reminder card">
+    <view class="reminder-label">微信提醒</view>
+    <view class="reminder-value">{{reminderText}}</view>
+    <button wx:if="{{!reminder.covered}}" class="reminder-button" bindtap="enableReminder">开启下一次提醒</button>
+  </view>
+
+  <view wx:if="{{today.viewState === 'not_taken'}}" class="medical-note muted">
+    如果发生漏服或不确定情况，请查看对应药品说明书或咨询医生。
+  </view>
+</view>

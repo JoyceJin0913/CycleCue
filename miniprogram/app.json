@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/launch/index",
+    "pages/onboarding/index",
+    "pages/today/index",
+    "pages/calendar/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "CycleCue",
+    "navigationBarBackgroundColor": "#FCFAF7",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FCFAF7",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#77716B",
+    "selectedColor": "#735A9D",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/today/index",
+        "text": "今日"
+      },
+      {
+        "pagePath": "pages/calendar/index",
+        "text": "日历"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

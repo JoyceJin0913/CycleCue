@@ -1,0 +1,110 @@
+.month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 36rpx;
+}
+
+.month-title {
+  font-size: 36rpx;
+  font-weight: 650;
+}
+
+.month-button {
+  width: 72rpx;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #735a9d;
+  font-size: 48rpx;
+  line-height: 64rpx;
+}
+
+.month-button::after {
+  border: 0;
+}
+
+.weekday-row,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.weekday {
+  padding-bottom: 18rpx;
+  color: #958e87;
+  font-size: 22rpx;
+  text-align: center;
+}
+
+.day {
+  display: flex;
+  min-height: 94rpx;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20rpx;
+}
+
+.day.selected {
+  background: #f0eaf7;
+}
+
+.outside {
+  opacity: 0.3;
+}
+
+.day-number {
+  font-size: 25rpx;
+}
+
+.indicator {
+  height: 32rpx;
+  margin-top: 4rpx;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.state-taken {
+  color: #5b8665;
+}
+
+.state-not_taken,
+.state-unrecorded_overdue {
+  color: #b94f56;
+}
+
+.state-future {
+  color: #735a9d;
+}
+
+.state-break,
+.state-before_start {
+  color: #aaa39d;
+}
+
+.loading {
+  padding: 120rpx 0;
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  margin-top: 36rpx;
+  padding: 28rpx;
+  flex-wrap: wrap;
+  gap: 18rpx 30rpx;
+  color: #716a64;
+  font-size: 23rpx;
+}
+
+.detail {
+  margin-top: 24rpx;
+  padding: 28rpx;
+}
+
+.detail-date {
+  margin-bottom: 8rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}

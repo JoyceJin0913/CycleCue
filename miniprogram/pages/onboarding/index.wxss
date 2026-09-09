@@ -1,0 +1,57 @@
+.eyebrow {
+  color: #735a9d;
+  font-size: 24rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+.title {
+  margin-top: 12rpx;
+  font-size: 52rpx;
+  font-weight: 700;
+}
+
+.intro {
+  margin-top: 18rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+.form-card {
+  margin-top: 48rpx;
+  padding: 4rpx 32rpx;
+}
+
+.field {
+  padding: 32rpx 0;
+  border-bottom: 1rpx solid #eee9e4;
+}
+
+.last-field {
+  border-bottom: 0;
+}
+
+.label {
+  margin-bottom: 14rpx;
+  color: #77716b;
+  font-size: 24rpx;
+}
+
+.fixed-value,
+.picker-value {
+  display: flex;
+  justify-content: space-between;
+  font-size: 31rpx;
+}
+
+.preview {
+  margin: 32rpx 8rpx 44rpx;
+  color: #655d57;
+  font-size: 27rpx;
+  line-height: 1.6;
+}
+
+.error-message {
+  margin-top: 24rpx;
+  text-align: center;
+}

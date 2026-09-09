@@ -1,0 +1,20 @@
+{
+  "name": "cycle-cue",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CycleCue WeChat Mini Program V1",
+  "scripts": {
+    "sync:domain": "node scripts/sync-domain.mjs",
+    "test": "node --import tsx --test packages/domain/test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:functions": "node scripts/build-functions.mjs",
+    "check": "npm run sync:domain && npm run test && npm run typecheck && npm run build:functions"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.0",
+    "esbuild": "0.28.2",
+    "miniprogram-api-typings": "5.2.3",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  }
+}
