@@ -1,0 +1,43 @@
+<view class="page care-page">
+  <view class="intro">
+    <view class="page-title">朋友监督</view>
+    <view class="muted">朋友只能看到每日记录状态，不会看到照片。</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="card loading muted">正在读取…</view>
+  <view wx:elif="{{errorMessage}}" class="card error-card">
+    <view class="error">{{errorMessage}}</view>
+    <button class="secondary-button" bindtap="refresh">重新加载</button>
+  </view>
+
+  <block wx:else>
+    <view wx:if="{{watching.length}}" class="section">
+      <view class="section-title">我在关注</view>
+      <view wx:for="{{watching}}" wx:key="relationshipId" class="card person-card">
+        <view class="person-name">{{item.ownerLabel}}</view>
+        <view class="status">{{item.statusText}}</view>
+        <view wx:if="{{item.today}}" class="muted small">{{item.today.displayDate}} · 计划时间 {{item.today.scheduledLocalTime}}</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">监督我的人</view>
+      <view wx:if="{{caregivers.length}}">
+        <view wx:for="{{caregivers}}" wx:key="relationshipId" class="card person-card row-card">
+          <view class="person-name">{{item.caregiverLabel}}</view>
+          <view class="joined">已加入</view>
+        </view>
+      </view>
+      <view wx:else class="card empty-card muted">还没有朋友加入</view>
+    </view>
+
+    <view class="card invite-card">
+      <view class="field-label">朋友看到的称呼</view>
+      <input class="name-input" maxlength="12" value="{{ownerLabel}}" bindinput="onOwnerLabelInput" />
+      <view class="muted small">还可邀请 {{remainingInviteSlots}} 人 · 链接 48 小时内有效</view>
+      <button wx:if="{{!inviteToken}}" class="primary-button" loading="{{generatingInvite}}" disabled="{{generatingInvite || remainingInviteSlots <= 0}}" bindtap="prepareInvite">生成邀请</button>
+      <button wx:else class="primary-button share-button" open-type="share">发送给微信好友</button>
+      <button wx:if="{{inviteToken}}" class="secondary-button" bindtap="prepareInvite">重新生成</button>
+    </view>
+  </block>
+</view>

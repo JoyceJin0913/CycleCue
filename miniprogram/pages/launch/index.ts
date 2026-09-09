@@ -23,6 +23,8 @@ Page({
       const data = await callApi<BootstrapDto>('bootstrap.get')
       if (data.hasRegimen) {
         wx.switchTab({ url: '/pages/today/index' })
+      } else if (data.hasCareLinks) {
+        wx.switchTab({ url: '/pages/care/index' })
       } else {
         wx.redirectTo({ url: '/pages/onboarding/index' })
       }

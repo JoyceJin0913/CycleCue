@@ -14,6 +14,10 @@ import { allocateAvailableGrants } from './subscription'
 
 interface SetTodayPayload {
   status?: unknown
+  evidence?: {
+    uploadId?: unknown
+    fileId?: unknown
+  }
 }
 
 export async function doseSetToday(context: AppContext, payload: SetTodayPayload) {
@@ -28,6 +32,7 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
   }
 
   const id = occurrenceId(regimen._id, today)
+  const evidence = await validatePhotoEvidence(context, payload.evidence, id, payload.status)
   const idempotency = await claimIdempotency(context, 'dose.setToday', payload)
   if (idempotency.completedResultRef) {
     const existing = await getDocument<DoseDocument>(context.db.collection('dose_records'), id)
@@ -55,9 +60,23 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
     updatedAt: context.serverNow,
     firstRequestId: existing?.firstRequestId ?? context.requestId,
     lastRequestId: context.requestId,
+    evidenceType: evidence ? 'photo' : 'none',
+    ...(evidence ? { evidenceFileId: evidence.fileId, evidenceUploadId: evidence.uploadId } : {}),
   }
 
-  await context.db.collection('dose_records').doc(id).set({ data: withoutDocumentId(document) })
+  await context.db.runTransaction(async (transaction: any) => {
+    if (evidence) {
+      const ticketResult = await transaction.collection('photo_uploads').doc(evidence.uploadId).get()
+      const ticket = ticketResult.data
+      if (!ticket || ticket.status !== 'prepared') {
+        throw new BusinessError('PHOTO_TICKET_INVALID', '照片上传凭据已失效，请重新拍照')
+      }
+      await transaction.collection('photo_uploads').doc(evidence.uploadId).update({
+        data: { status: 'bound', boundAt: context.serverNow, doseRecordId: id },
+      })
+    }
+    await transaction.collection('dose_records').doc(id).set({ data: withoutDocumentId(document) })
+  })
 
   const pendingJobs = await context.db
     .collection('reminder_jobs')
@@ -85,6 +104,31 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
 
   await completeIdempotency(context, idempotency.id, id)
   return serializeDose(document)
+}
+
+async function validatePhotoEvidence(
+  context: AppContext,
+  input: SetTodayPayload['evidence'],
+  occurrence: string,
+  status: unknown,
+): Promise<{ uploadId: string; fileId: string } | null> {
+  if (input === undefined) return null
+  if (status !== 'taken' || typeof input.uploadId !== 'string' || typeof input.fileId !== 'string') {
+    throw new BusinessError('PHOTO_EVIDENCE_INVALID', '照片记录信息无效，请重新拍照')
+  }
+  const ticket = await getDocument<any>(context.db.collection('photo_uploads'), input.uploadId)
+  if (
+    !ticket ||
+    ticket.ownerUserId !== context.userId ||
+    ticket.occurrenceId !== occurrence ||
+    ticket.status !== 'prepared' ||
+    !(ticket.expiresAt instanceof Date) ||
+    ticket.expiresAt.getTime() <= context.serverNow.getTime() ||
+    !input.fileId.endsWith(`/${ticket.cloudPath}`)
+  ) {
+    throw new BusinessError('PHOTO_TICKET_INVALID', '照片上传凭据已失效，请重新拍照')
+  }
+  return { uploadId: input.uploadId, fileId: input.fileId }
 }
 
 function serializeDose(document: any) {

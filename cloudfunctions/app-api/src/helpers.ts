@@ -52,9 +52,13 @@ export interface RegimenDocument {
 }
 
 export async function listRegimens(context: AppContext): Promise<RegimenDocument[]> {
+  return listRegimensForUser(context, context.userId)
+}
+
+export async function listRegimensForUser(context: AppContext, ownerUserId: string): Promise<RegimenDocument[]> {
   const result = await context.db
     .collection('regimen_versions')
-    .where({ ownerUserId: context.userId })
+    .where({ ownerUserId })
     .orderBy('effectiveFrom', 'asc')
     .get()
   return result.data as RegimenDocument[]

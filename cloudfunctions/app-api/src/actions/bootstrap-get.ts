@@ -4,10 +4,14 @@ import { reminderCoverage, todayView } from '../view'
 
 export async function bootstrapGet(context: AppContext) {
   await ensureUser(context)
-  const regimens = await listRegimens(context)
+  const [regimens, careLinks] = await Promise.all([
+    listRegimens(context),
+    context.db.collection('care_links').where({ caregiverUserId: context.userId, status: 'active' }).limit(1).get(),
+  ])
   const view = await todayView(context, regimens)
   return {
     hasRegimen: regimens.length > 0,
+    hasCareLinks: careLinks.data.length > 0,
     regimen: view.regimen
       ? {
           id: view.regimen._id,

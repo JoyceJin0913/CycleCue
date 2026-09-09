@@ -33,7 +33,7 @@
 | 小程序源码 | `miniprogram/` |
 | 云函数 | `app-api` 已部署并可用；`reminder-dispatcher` 按计划暂未部署 |
 | 一次性订阅模板 | 尚未选择，客户端模板 ID 暂为空 |
-| 当前模拟器状态 | 原 `FUNCTION_NOT_FOUND` 原因已解除，等待开发者工具重新编译/重试验证真实调用链 |
+| 当前模拟器状态 | 核心记录与照片链路已跑通；朋友邀请功能待双账号真机验证 |
 
 ### 可以提交 Git 的标识符
 
@@ -127,7 +127,7 @@ tcb env list --json
 
 当前 `cloudbaserc.json` v2.1 的数据库编排只完整支持 PostgreSQL migration，不能可靠地声明式建立本项目的 NoSQL 集合、索引和安全规则。因此定义仍以仓库 `infra/database/` 为准。开发环境已由 Codex 通过 CloudBase CLI 的官方通用 API 完成首次建立和只读复查；控制台保留为人工回退入口。
 
-创建 6 个集合：
+创建 9 个集合：
 
 ```text
 users
@@ -136,6 +136,9 @@ dose_records
 subscription_grants
 reminder_jobs
 idempotency_requests
+photo_uploads
+care_invites
+care_links
 ```
 
 每个集合的客户端权限都设置为不可读、不可写。小程序页面只调用 `app-api`，不直接访问数据库。
@@ -150,10 +153,14 @@ idempotency_requests
 | `reminder_jobs` | `status_scheduled_at` | `status ASC, scheduledAt ASC` |
 | `reminder_jobs` | `recipient_status_scheduled_at` | `recipientUserId ASC, status ASC, scheduledAt ASC` |
 | `idempotency_requests` | `user_expires_at` | `userId ASC, expiresAt ASC` |
+| `photo_uploads` | `status_expires_at` | `status ASC, expiresAt ASC` |
+| `care_invites` | `owner_status_expires_at` | `ownerUserId ASC, status ASC, expiresAt ASC` |
+| `care_links` | `owner_status` | `ownerUserId ASC, status ASC` |
+| `care_links` | `caregiver_status` | `caregiverUserId ASC, status ASC` |
 
 `infra/database/security-rules.example.json` 是总览文档，不是可以一次导入所有集合的规则文件；需要逐个集合设置。
 
-完成标志：6 个集合存在、6 个组合索引生效、普通客户端直接读写均被拒绝。
+完成标志：9 个集合存在、10 个组合索引生效、普通客户端直接读写均被拒绝；云存储保持私有权限。
 
 ### D. 首次部署基础 API
 
@@ -198,6 +205,9 @@ CloudBase Node 函数入口必须使用 `<文件名>.<导出函数名>`，例如
 5. 数据库出现 `users`、`regimen_versions`、`dose_records` 记录；
 6. 重复点击不会制造重复业务记录；
 7. 客户端无法直接读取数据库。
+8. 今日拍照可上传并绑定记录，照片仅本人可见；
+9. 两个不同微信账号可以完成邀请与领取，朋友只看到今日状态和记录时间；
+10. 没有自己方案的朋友重新打开时直接进入“朋友”页。
 
 这一步通过后，最基础且不含提醒的 V1 才算可运行。
 
@@ -351,7 +361,7 @@ npm run cloud:deploy
 | 找不到页面对应 `.js` | 开发者工具编译 | 确认 TypeScript 编译插件后重新编译 |
 | `SERVER_NOT_CONFIGURED` | 函数环境变量 | 设置 `USER_ID_HASH_SECRET` |
 | `TEMPLATE_NOT_CONFIGURED` | 订阅模板 | 配置模板 ID和真实字段映射 |
-| 数据库集合不存在 | CloudBase 数据库 | 按阶段 C 建立 6 个集合 |
+| 数据库集合不存在 | CloudBase 数据库 | 按阶段 C 建立 9 个集合 |
 | 查询提示缺少索引 | CloudBase 数据库 | 按表格建立组合索引 |
 | `PERMISSION_DENIED` | 函数/数据库权限 | 核对调用规则、登录上下文和集合权限 |
 | `tcb` 看不到目标环境 | CLI 账号不匹配 | 重新登录并选择该小程序的公众平台账号 |
@@ -370,15 +380,16 @@ npm run cloud:deploy
 
 - [x] 1. 完成 `tcb login --flow device` 的微信公众平台账号授权；
 - [x] 2. 用 `tcb env list --json` 确认目标环境可见；
-- [x] 3. 创建 6 个集合、6 个组合索引和客户端拒绝规则；
+- [x] 3. 创建 9 个集合、10 个组合索引和客户端拒绝规则；
 - [x] 4. 仅部署 `app-api`，配置 `USER_ID_HASH_SECRET`；
-- [ ] 5. 验证首次设置、今日记录和月历；
-- [ ] 6. 在公众平台选择一次性订阅模板；
-- [ ] 7. 完成模板字段映射，部署 dispatcher；
-- [ ] 8. 真机验证一次授权、一次发送及已记录后不发送；
-- [ ] 9. 配置本机 `miniprogram-ci`；
-- [ ] 10. 上传并设置第一个体验版；
-- [ ] 11. 完成审核材料后提交首版。
+- [x] 5. 验证首次设置、今日记录、照片和月历；
+- [ ] 6. 用两个微信账号验证邀请领取及照片不可见；
+- [ ] 7. 在公众平台选择一次性订阅模板；
+- [ ] 8. 完成模板字段映射，部署 dispatcher；
+- [ ] 9. 真机验证一次授权、一次发送及已记录后不发送；
+- [ ] 10. 配置本机 `miniprogram-ci`；
+- [ ] 11. 上传并设置第一个体验版；
+- [ ] 12. 完成审核材料后提交首版。
 
 ## 10. 官方资料
 

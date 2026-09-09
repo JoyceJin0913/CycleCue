@@ -25,6 +25,38 @@ export interface TodayDto {
   recordStatus: RecordStatus
   firstRecordedAt: string | null
   lastChangedAt: string | null
+  evidenceType: 'photo' | 'none'
+  evidenceFileId: string | null
+}
+
+export interface PhotoUploadDto {
+  uploadId: string
+  cloudPath: string
+  maxBytes: number
+  expiresAt: string
+}
+
+export interface CareInviteDto {
+  token: string
+  ownerLabel: string
+  expiresAt: string
+}
+
+export interface CareListDto {
+  caregivers: Array<{
+    relationshipId: string
+    caregiverLabel: string
+    notifyOnOverdue: boolean
+  }>
+  watching: Array<{
+    relationshipId: string
+    ownerLabel: string
+    today: Pick<
+      TodayDto,
+      'localDate' | 'displayDate' | 'planStatus' | 'viewState' | 'scheduledLocalTime' | 'recordStatus' | 'lastChangedAt'
+    > | null
+  }>
+  remainingInviteSlots: number
 }
 
 export interface ReminderCoverageDto {
@@ -35,6 +67,7 @@ export interface ReminderCoverageDto {
 
 export interface BootstrapDto {
   hasRegimen: boolean
+  hasCareLinks: boolean
   regimen: RegimenDto | null
   today: TodayDto | null
   reminder: ReminderCoverageDto

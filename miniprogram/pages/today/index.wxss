@@ -54,6 +54,39 @@
   margin-top: 58rpx;
 }
 
+.photo-action {
+  min-height: 112rpx;
+  font-size: 34rpx;
+}
+
+.pending-photo,
+.recorded-photo {
+  display: block;
+  width: 100%;
+  height: 360rpx;
+  margin-top: 36rpx;
+  border-radius: 20rpx;
+  background: #f0eaf7;
+}
+
+.pending-photo + .main-action {
+  margin-top: 24rpx;
+}
+
+.photo-badge {
+  margin-top: 36rpx;
+  color: #5a765f;
+  font-size: 26rpx;
+}
+
+.photo-followup {
+  margin-top: 24rpx;
+}
+
+.quiet-action {
+  color: #89827c;
+}
+
 .recorded-time {
   margin: 48rpx 0 16rpx;
   color: #5a765f;

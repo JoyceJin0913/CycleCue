@@ -1,0 +1,74 @@
+.intro {
+  margin-bottom: 32rpx;
+}
+
+.page-title {
+  margin-bottom: 10rpx;
+  font-size: 42rpx;
+  font-weight: 700;
+}
+
+.section {
+  margin-top: 32rpx;
+}
+
+.section-title {
+  margin: 0 8rpx 14rpx;
+  font-size: 27rpx;
+  font-weight: 650;
+}
+
+.person-card,
+.empty-card,
+.invite-card,
+.error-card,
+.loading {
+  margin-bottom: 18rpx;
+  padding: 28rpx;
+}
+
+.row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.person-name {
+  font-size: 31rpx;
+  font-weight: 650;
+}
+
+.status {
+  margin-top: 10rpx;
+  color: #5a765f;
+  font-size: 28rpx;
+}
+
+.joined {
+  color: #5a765f;
+  font-size: 25rpx;
+}
+
+.small {
+  margin-top: 8rpx;
+  font-size: 23rpx;
+}
+
+.field-label {
+  margin-bottom: 12rpx;
+  font-size: 25rpx;
+}
+
+.name-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 84rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid #ded7d1;
+  border-radius: 18rpx;
+  background: #fcfaf7;
+}
+
+.invite-card .primary-button {
+  margin-top: 28rpx;
+}

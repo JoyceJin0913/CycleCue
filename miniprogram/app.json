@@ -3,7 +3,9 @@
     "pages/launch/index",
     "pages/onboarding/index",
     "pages/today/index",
-    "pages/calendar/index"
+    "pages/calendar/index",
+    "pages/care/index",
+    "pages/invite/index"
   ],
   "window": {
     "navigationBarTitleText": "CycleCue",
@@ -25,6 +27,10 @@
       {
         "pagePath": "pages/calendar/index",
         "text": "日历"
+      },
+      {
+        "pagePath": "pages/care/index",
+        "text": "朋友"
       }
     ]
   },

@@ -20,11 +20,30 @@
     <view class="planned muted">{{stateDescription}}</view>
 
     <block wx:if="{{showRecordActions}}">
-      <button class="primary-button main-action" bindtap="confirmTaken">确认已服</button>
+      <block wx:if="{{pendingPhotoPath}}">
+        <image class="pending-photo" src="{{pendingPhotoPath}}" mode="aspectFill" bindtap="previewPhoto" />
+        <button class="primary-button main-action" loading="{{savingPhoto}}" disabled="{{savingPhoto}}" bindtap="confirmPhotoTaken">使用照片并记录</button>
+        <button class="secondary-button" disabled="{{savingPhoto}}" bindtap="takePhoto">重新拍照</button>
+        <button class="secondary-button quiet-action" disabled="{{savingPhoto}}" bindtap="cancelPhoto">取消</button>
+      </block>
+      <block wx:else>
+        <button class="primary-button main-action photo-action" loading="{{choosingPhoto}}" disabled="{{choosingPhoto}}" bindtap="takePhoto">📷 今日拍照片</button>
+        <button class="secondary-button" bindtap="confirmTaken">无照片确认已服</button>
+      </block>
       <button class="secondary-button" bindtap="markNotTaken">记录今天未服</button>
     </block>
 
     <block wx:if="{{showEditRecord}}">
+      <block wx:if="{{pendingPhotoPath}}">
+        <image class="pending-photo" src="{{pendingPhotoPath}}" mode="aspectFill" bindtap="previewPhoto" />
+        <button class="primary-button main-action" loading="{{savingPhoto}}" disabled="{{savingPhoto}}" bindtap="confirmPhotoTaken">使用照片并记录</button>
+        <button class="secondary-button quiet-action" disabled="{{savingPhoto}}" bindtap="cancelPhoto">取消</button>
+      </block>
+      <block wx:else>
+        <image wx:if="{{photoTempUrl}}" class="recorded-photo" src="{{photoTempUrl}}" mode="aspectFill" bindtap="previewPhoto" />
+        <view wx:elif="{{today.evidenceType === 'photo'}}" class="photo-badge">已保存服药照片</view>
+        <button wx:if="{{today.recordStatus === 'taken'}}" class="secondary-button photo-followup" bindtap="takePhoto">{{today.evidenceType === 'photo' ? '替换今日照片' : '补拍今日照片'}}</button>
+      </block>
       <view class="recorded-time">{{recordedTimeText}}</view>
       <button class="secondary-button" bindtap="editRecord">修改今天的记录</button>
     </block>

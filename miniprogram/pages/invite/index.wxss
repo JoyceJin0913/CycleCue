@@ -1,0 +1,64 @@
+.invite-page {
+  padding-top: 100rpx;
+  text-align: center;
+}
+
+.invite-mark {
+  color: #735a9d;
+  font-size: 88rpx;
+}
+
+.title {
+  margin-top: 10rpx;
+  font-size: 42rpx;
+  font-weight: 720;
+}
+
+.message {
+  margin-top: 48rpx;
+}
+
+.invite-card {
+  margin-top: 48rpx;
+  padding: 40rpx 32rpx;
+  text-align: left;
+}
+
+.description {
+  font-size: 30rpx;
+  line-height: 1.6;
+}
+
+.privacy-note {
+  margin-top: 18rpx;
+  color: #5a765f;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.field-label {
+  margin-top: 32rpx;
+  font-size: 25rpx;
+}
+
+.name-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 84rpx;
+  margin-top: 12rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid #ded7d1;
+  border-radius: 18rpx;
+  background: #fcfaf7;
+}
+
+.invite-card .primary-button {
+  margin-top: 30rpx;
+}
+
+.success {
+  margin-bottom: 16rpx;
+  color: #5a765f;
+  font-size: 38rpx;
+  font-weight: 700;
+}

@@ -8,7 +8,7 @@ import {
   type LocalDate,
 } from '../../../packages/domain/src/index'
 import type { AppContext } from './context'
-import { getDocument, listRegimens, regimenForDate, stableId, type RegimenDocument } from './helpers'
+import { getDocument, listRegimensForUser, regimenForDate, stableId, type RegimenDocument } from './helpers'
 
 export interface DoseDocument {
   _id: string
@@ -18,6 +18,8 @@ export interface DoseDocument {
   status: 'taken' | 'not_taken'
   firstRecordedAt: Date
   lastChangedAt: Date
+  evidenceType?: 'photo' | 'none'
+  evidenceFileId?: string
 }
 
 export function occurrenceId(regimenVersionId: string, localDate: string): string {
@@ -46,9 +48,13 @@ function displayDate(localDate: string): string {
   return `${Number(month)} 月 ${Number(day)} 日`
 }
 
-export async function todayView(context: AppContext, regimens?: RegimenDocument[]) {
+export async function todayView(
+  context: AppContext,
+  regimens?: RegimenDocument[],
+  ownerUserId: string = context.userId,
+) {
   const today = localDateInTimeZone(context.serverNow)
-  const versions = regimens ?? (await listRegimens(context))
+  const versions = regimens ?? (await listRegimensForUser(context, ownerUserId))
   const regimen = regimenForDate(versions, today) ?? versions.find((item) => item.startDate > today) ?? null
   if (!regimen) return { regimen: null, today: null }
 
@@ -86,6 +92,8 @@ export async function todayView(context: AppContext, regimens?: RegimenDocument[
       recordStatus: record?.status ?? null,
       firstRecordedAt: record?.firstRecordedAt?.toISOString() ?? null,
       lastChangedAt: record?.lastChangedAt?.toISOString() ?? null,
+      evidenceType: record?.evidenceType ?? 'none',
+      evidenceFileId: record?.evidenceFileId ?? null,
     },
   }
 }

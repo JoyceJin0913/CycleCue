@@ -2,6 +2,9 @@
   "users": { "read": false, "write": false },
   "regimen_versions": { "read": false, "write": false },
   "dose_records": { "read": false, "write": false },
+  "photo_uploads": { "read": false, "write": false },
+  "care_invites": { "read": false, "write": false },
+  "care_links": { "read": false, "write": false },
   "subscription_grants": { "read": false, "write": false },
   "reminder_jobs": { "read": false, "write": false },
   "idempotency_requests": { "read": false, "write": false }

@@ -1,17 +1,20 @@
 .month-header {
-  display: flex;
+  display: grid;
   align-items: center;
-  justify-content: space-between;
+  grid-template-columns: 72rpx minmax(0, 1fr) 72rpx;
   margin-bottom: 36rpx;
 }
 
 .month-title {
   font-size: 36rpx;
   font-weight: 650;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .month-button {
   width: 72rpx;
+  min-width: 72rpx;
   margin: 0;
   padding: 0;
   background: transparent;

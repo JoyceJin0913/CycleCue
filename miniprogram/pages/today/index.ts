@@ -1,5 +1,5 @@
 import { callApi, createRequestId } from '../../services/api-client'
-import type { BootstrapDto, ReminderCoverageDto, TodayDto } from '../../services/api-types'
+import type { BootstrapDto, PhotoUploadDto, ReminderCoverageDto, TodayDto } from '../../services/api-types'
 import {
   flushPendingSubscriptions,
   registerAcceptedSubscription,
@@ -17,6 +17,15 @@ const emptyToday: TodayDto = {
   recordStatus: null,
   firstRecordedAt: null,
   lastChangedAt: null,
+  evidenceType: 'none',
+  evidenceFileId: null,
+}
+
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+
+function photoExtension(path: string): 'jpg' | 'jpeg' | 'png' {
+  const extension = path.split('.').pop()?.toLowerCase()
+  return extension === 'png' || extension === 'jpeg' ? extension : 'jpg'
 }
 
 const emptyReminder: ReminderCoverageDto = {
@@ -55,6 +64,11 @@ Page({
     recordedTimeText: '',
     showRecordActions: false,
     showEditRecord: false,
+    pendingPhotoPath: '',
+    pendingPhotoSize: 0,
+    photoTempUrl: '',
+    choosingPhoto: false,
+    savingPhoto: false,
   },
 
   onShow() {
@@ -103,12 +117,90 @@ Page({
       recordedTimeText: timestamp ? `记录于 ${timestamp}` : '',
       showRecordActions,
       showEditRecord,
+      pendingPhotoPath: '',
+      pendingPhotoSize: 0,
+      photoTempUrl: '',
     })
+    if (today.evidenceFileId) void this.resolvePhotoUrl(today.evidenceFileId)
+  },
+
+  async resolvePhotoUrl(fileId: string) {
+    try {
+      const result = await wx.cloud.getTempFileURL({ fileList: [fileId] })
+      const photo = result.fileList[0]
+      if (photo?.tempFileURL) this.setData({ photoTempUrl: photo.tempFileURL })
+    } catch {
+      this.setData({ photoTempUrl: '' })
+    }
+  },
+
+  async takePhoto() {
+    if (this.data.choosingPhoto || this.data.savingPhoto) return
+    this.setData({ choosingPhoto: true })
+    try {
+      const result = await wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: ['camera'],
+        sizeType: ['compressed'],
+      })
+      const photo = result.tempFiles[0]
+      if (!photo) return
+      if (photo.size > MAX_PHOTO_BYTES) {
+        wx.showToast({ title: '照片不能超过 5 MB', icon: 'none' })
+        return
+      }
+      this.setData({ pendingPhotoPath: photo.tempFilePath, pendingPhotoSize: photo.size })
+    } catch {
+      // Cancelling the camera is not an error and should not create a record.
+    } finally {
+      this.setData({ choosingPhoto: false })
+    }
+  },
+
+  cancelPhoto() {
+    if (!this.data.savingPhoto) this.setData({ pendingPhotoPath: '', pendingPhotoSize: 0 })
+  },
+
+  previewPhoto() {
+    const url = this.data.photoTempUrl || this.data.pendingPhotoPath
+    if (url) wx.previewImage({ current: url, urls: [url] })
+  },
+
+  async confirmPhotoTaken() {
+    const filePath = this.data.pendingPhotoPath
+    if (!filePath || this.data.savingPhoto) return
+    this.setData({ savingPhoto: true })
+    wx.showLoading({ title: '正在保存' })
+    const subscriptionChoice = await requestSelfDueSubscription()
+    let saved = false
+    try {
+      const prepared = await callApi<PhotoUploadDto>('photo.prepareUpload', {
+        extension: photoExtension(filePath),
+        size: this.data.pendingPhotoSize,
+      })
+      const uploaded = await wx.cloud.uploadFile({ cloudPath: prepared.cloudPath, filePath })
+      await callApi(
+        'dose.setToday',
+        { status: 'taken', evidence: { uploadId: prepared.uploadId, fileId: uploaded.fileID } },
+        createRequestId(),
+      )
+      saved = true
+      this.setData({ pendingPhotoPath: '', pendingPhotoSize: 0 })
+      await this.refresh()
+    } catch (error) {
+      wx.showToast({ title: error instanceof Error ? error.message : '照片保存失败', icon: 'none' })
+    } finally {
+      if (subscriptionChoice === 'accept') await registerAcceptedSubscription('dose_confirm')
+      wx.hideLoading()
+      this.setData({ savingPhoto: false })
+      if (saved) wx.showToast({ title: '已记录', icon: 'success' })
+    }
   },
 
   confirmTaken() {
     wx.showModal({
-      title: '确认已服？',
+      title: '无照片确认？',
       content: '将使用服务器时间保存今天的记录。',
       confirmText: '确认已服',
       success: ({ confirm }) => {

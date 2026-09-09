@@ -36,7 +36,7 @@ function shiftMonth(yearMonth: string, offset: number): string {
 
 function displayMonth(yearMonth: string): string {
   const [year, month] = yearMonth.split('-')
-  return `${year} 年 ${Number(month)} 月`
+  return `${year}年 ${Number(month)}月`
 }
 
 Page({
