@@ -39,7 +39,8 @@ export async function subscriptionRegister(context: AppContext, payload: Registe
       })
       .count()
     if (unconsumed.total >= 2) {
-      throw new BusinessError('GRANT_LIMIT_REACHED', '已有两次待使用提醒，无需重复开启')
+      await allocateAvailableGrants(context, templateId)
+      return reminderCoverage(context)
     }
 
     try {
@@ -86,6 +87,7 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
       jobId: string
       scheduledAt: Date
       scheduledLocalTime: string
+      replacesExistingJob: boolean
     } | null = null
 
     for (let count = 0; count < 370; count += 1, cursor = addCalendarDays(cursor, 1)) {
@@ -93,6 +95,12 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
       if (!regimen || getPlanDay(parseLocalDate(regimen.startDate), cursor).status !== 'active') continue
       const scheduledAt = localDateTimeToUtc(cursor, regimen.scheduledLocalTime)
       if (scheduledAt.getTime() <= context.serverNow.getTime()) continue
+      const recorded = await context.db
+        .collection('dose_records')
+        .where({ ownerUserId: context.userId, localDate: cursor })
+        .limit(1)
+        .get()
+      if (recorded.data.length > 0) continue
       const occurrence = occurrenceId(regimen._id, cursor)
       const jobId = stableId(context.userId, templateId, occurrence, 'self_due')
       const job = await getDocument<any>(context.db.collection('reminder_jobs'), jobId)
@@ -104,6 +112,7 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
         jobId,
         scheduledAt,
         scheduledLocalTime: regimen.scheduledLocalTime,
+        replacesExistingJob: Boolean(job),
       }
       cursor = addCalendarDays(cursor, 1)
       break
@@ -116,8 +125,7 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
       await transaction.collection('subscription_grants').doc(grant._id).update({
         data: { status: 'reserved', reservedJobId: candidate!.jobId, updatedAt: context.serverNow },
       })
-      await transaction.collection('reminder_jobs').doc(candidate!.jobId).set({
-        data: withoutDocumentId({
+      const jobData = withoutDocumentId({
           _id: candidate!.jobId,
           recipientUserId: context.userId,
           regimenVersionId: candidate!.regimenId,
@@ -132,8 +140,12 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
           attemptCount: 0,
           createdAt: context.serverNow,
           updatedAt: context.serverNow,
-        }),
-      })
+        })
+      if (candidate!.replacesExistingJob) {
+        await transaction.collection('reminder_jobs').doc(candidate!.jobId).update({ data: jobData })
+      } else {
+        await transaction.collection('reminder_jobs').doc(candidate!.jobId).set({ data: jobData })
+      }
     })
   }
 }
