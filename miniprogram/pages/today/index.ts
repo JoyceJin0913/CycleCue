@@ -110,7 +110,7 @@ Page({
     wx.showModal({
       title: '确认已服？',
       content: '将使用服务器时间保存今天的记录。',
-      confirmText: '确认并续订',
+      confirmText: '确认已服',
       success: ({ confirm }) => {
         if (confirm) void this.setTodayStatus('taken', true)
       },
