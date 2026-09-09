@@ -1,7 +1,14 @@
 import { getPlanDay, localDateInTimeZone, localDateTimeToUtc, parseLocalDate } from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
-import { claimIdempotency, completeIdempotency, getDocument, listRegimens, regimenForDate } from '../helpers'
+import {
+  claimIdempotency,
+  completeIdempotency,
+  getDocument,
+  listRegimens,
+  regimenForDate,
+  withoutDocumentId,
+} from '../helpers'
 import { occurrenceId, type DoseDocument } from '../view'
 import { allocateAvailableGrants } from './subscription'
 
@@ -50,7 +57,7 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
     lastRequestId: context.requestId,
   }
 
-  await context.db.collection('dose_records').doc(id).set({ data: document })
+  await context.db.collection('dose_records').doc(id).set({ data: withoutDocumentId(document) })
 
   const pendingJobs = await context.db
     .collection('reminder_jobs')

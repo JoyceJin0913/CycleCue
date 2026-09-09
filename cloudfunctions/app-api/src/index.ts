@@ -26,12 +26,15 @@ export async function main(event: EventEnvelope) {
     return { ok: true, requestId, serverNow: context.serverNow.toISOString(), data }
   } catch (error) {
     const businessError = error instanceof BusinessError ? error : null
+    const internalMessage = error instanceof Error ? error.message : 'Unknown internal error'
+    const exposeInternalMessage = process.env.MINIPROGRAM_STATE === 'developer'
     console.error(
       JSON.stringify({
         event: 'app_api.failed',
         action: typeof event.action === 'string' ? event.action : 'invalid',
         requestId,
         code: businessError?.code ?? 'INTERNAL_ERROR',
+        internalMessage,
       }),
     )
     return {
@@ -40,7 +43,9 @@ export async function main(event: EventEnvelope) {
       serverNow: serverNow.toISOString(),
       error: {
         code: businessError?.code ?? 'INTERNAL_ERROR',
-        message: businessError?.message ?? '服务暂时不可用，请稍后重试',
+        message:
+          businessError?.message ??
+          (exposeInternalMessage ? `开发诊断：${internalMessage.slice(0, 240)}` : '服务暂时不可用，请稍后重试'),
         retryable: businessError?.retryable ?? true,
       },
     }

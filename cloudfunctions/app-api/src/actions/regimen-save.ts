@@ -8,6 +8,7 @@ import {
   getDocument,
   listRegimens,
   stableId,
+  withoutDocumentId,
   type RegimenDocument,
 } from '../helpers'
 
@@ -63,7 +64,7 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
         data: { effectiveTo: effectiveFrom, status: 'superseded' },
       })
     }
-    await transaction.collection('regimen_versions').doc(regimenId).set({ data: regimen })
+    await transaction.collection('regimen_versions').doc(regimenId).set({ data: withoutDocumentId(regimen) })
     await transaction.collection('users').doc(context.userId).update({
       data: { activeRegimenVersionId: regimenId, updatedAt: context.serverNow },
     })

@@ -6,6 +6,11 @@ export function stableId(...parts: string[]): string {
   return createHash('sha256').update(parts.join(':')).digest('hex')
 }
 
+export function withoutDocumentId<T extends { _id: string }>(document: T): Omit<T, '_id'> {
+  const { _id: _documentId, ...data } = document
+  return data
+}
+
 export async function getDocument<T>(collection: any, id: string): Promise<T | null> {
   try {
     const result = await collection.doc(id).get()
@@ -21,14 +26,14 @@ export async function ensureUser(context: AppContext): Promise<void> {
   if (existing) return
 
   await users.doc(context.userId).set({
-    data: {
+    data: withoutDocumentId({
       _id: context.userId,
       openid: context.openid,
       appid: context.appid,
       timezone: 'Asia/Shanghai',
       createdAt: context.serverNow,
       updatedAt: context.serverNow,
-    },
+    }),
   })
 }
 

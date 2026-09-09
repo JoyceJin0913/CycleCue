@@ -7,7 +7,7 @@ import {
 } from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
-import { getDocument, listRegimens, regimenForDate, stableId } from '../helpers'
+import { getDocument, listRegimens, regimenForDate, stableId, withoutDocumentId } from '../helpers'
 import { occurrenceId, reminderCoverage } from '../view'
 
 interface RegisterPayload {
@@ -117,7 +117,7 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
         data: { status: 'reserved', reservedJobId: candidate!.jobId, updatedAt: context.serverNow },
       })
       await transaction.collection('reminder_jobs').doc(candidate!.jobId).set({
-        data: {
+        data: withoutDocumentId({
           _id: candidate!.jobId,
           recipientUserId: context.userId,
           regimenVersionId: candidate!.regimenId,
@@ -132,7 +132,7 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
           attemptCount: 0,
           createdAt: context.serverNow,
           updatedAt: context.serverNow,
-        },
+        }),
       })
     })
   }

@@ -5,7 +5,7 @@
   "description": "CycleCue WeChat Mini Program V1",
   "scripts": {
     "sync:domain": "node scripts/sync-domain.mjs",
-    "test": "node --import tsx --test packages/domain/test/*.test.ts",
+    "test": "node --import tsx --test packages/domain/test/*.test.ts tests/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build:functions": "node scripts/build-functions.mjs",
     "cloud:validate": "tcb validate",
