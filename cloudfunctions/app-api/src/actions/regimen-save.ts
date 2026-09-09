@@ -1,4 +1,4 @@
-import { addCalendarDays, compareLocalDates, localDateInTimeZone, localDateTimeToUtc, parseLocalDate } from '../../../../packages/domain/src/index'
+import { compareLocalDates, localDateInTimeZone, localDateTimeToUtc, parseLocalDate } from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError, assertString } from '../errors'
 import {
@@ -38,9 +38,16 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
   }
 
   const regimens = await listRegimens(context)
-  const latest = regimens[regimens.length - 1]
-  const effectiveFrom = latest ? addCalendarDays(today, 1) : startDate
-  const regimenId = stableId(context.userId, 'regimen', context.requestId)
+  const currentCandidates = regimens.filter(
+    (item) => item.effectiveFrom <= today && (item.effectiveTo === undefined || today < item.effectiveTo),
+  )
+  const current = currentCandidates[currentCandidates.length - 1]
+  const future = regimens.filter((item) => item.effectiveFrom > today)
+  const isFirstPlan = regimens.length === 0
+  const effectiveFrom = isFirstPlan ? startDate : today
+  const regimenId = current?.effectiveFrom === today
+    ? current._id
+    : stableId(context.userId, 'regimen', context.requestId)
   const regimen: RegimenDocument = {
     _id: regimenId,
     ownerUserId: context.userId,
@@ -51,18 +58,17 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
     timezone: 'Asia/Shanghai',
     effectiveFrom,
     status: 'active',
-    createdAt: context.serverNow,
-  }
-
-  if (latest && latest.effectiveFrom === effectiveFrom) {
-    throw new BusinessError('PLAN_CHANGE_ALREADY_SCHEDULED', '次日已有待生效的计划，请刷新后再修改')
+    createdAt: current?.effectiveFrom === today ? current.createdAt : context.serverNow,
   }
 
   await context.db.runTransaction(async (transaction: any) => {
-    if (latest) {
-      await transaction.collection('regimen_versions').doc(latest._id).update({
+    if (current && current._id !== regimenId) {
+      await transaction.collection('regimen_versions').doc(current._id).update({
         data: { effectiveTo: effectiveFrom, status: 'superseded' },
       })
+    }
+    for (const pending of future) {
+      await transaction.collection('regimen_versions').doc(pending._id).remove()
     }
     await transaction.collection('regimen_versions').doc(regimenId).set({ data: withoutDocumentId(regimen) })
     await transaction.collection('users').doc(context.userId).update({
@@ -70,28 +76,31 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
     })
   })
 
-  if (latest) {
+  const replacedRegimenIds = [current?._id, ...future.map((item) => item._id)].filter(Boolean) as string[]
+  if (replacedRegimenIds.length > 0) {
     const newPlanStartsAt = localDateTimeToUtc(effectiveFrom, '00:00')
-    const jobs = await context.db
-      .collection('reminder_jobs')
-      .where({
-        recipientUserId: context.userId,
-        regimenVersionId: latest._id,
-        status: 'pending',
-        scheduledAt: context.command.gte(newPlanStartsAt),
-      })
-      .get()
-    for (const job of jobs.data) {
-      await context.db.runTransaction(async (transaction: any) => {
-        await transaction.collection('reminder_jobs').doc(job._id).update({
-          data: { status: 'skipped_plan_changed', updatedAt: context.serverNow },
+    for (const replacedRegimenId of replacedRegimenIds) {
+      const jobs = await context.db
+        .collection('reminder_jobs')
+        .where({
+          recipientUserId: context.userId,
+          regimenVersionId: replacedRegimenId,
+          status: 'pending',
+          scheduledAt: context.command.gte(newPlanStartsAt),
         })
-        if (job.grantId) {
-          await transaction.collection('subscription_grants').doc(job.grantId).update({
-            data: { status: 'available', reservedJobId: context.command.remove(), updatedAt: context.serverNow },
+        .get()
+      for (const job of jobs.data) {
+        await context.db.runTransaction(async (transaction: any) => {
+          await transaction.collection('reminder_jobs').doc(job._id).update({
+            data: { status: 'skipped_plan_changed', updatedAt: context.serverNow },
           })
-        }
-      })
+          if (job.grantId) {
+            await transaction.collection('subscription_grants').doc(job.grantId).update({
+              data: { status: 'available', reservedJobId: context.command.remove(), updatedAt: context.serverNow },
+            })
+          }
+        })
+      }
     }
   }
 

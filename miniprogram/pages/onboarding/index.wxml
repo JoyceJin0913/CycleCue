@@ -2,6 +2,7 @@
   <view class="eyebrow">V1 · 21+7</view>
   <view class="title">设置服药计划</view>
   <view class="intro muted">告诉 CycleCue 当前药板从哪天开始，以及你每天希望几点收到微信提醒。</view>
+  <view wx:if="{{isEditing}}" class="edit-hint">{{effectiveHint || '保存后立即按新计划计算；今天已有的记录会保留。'}}</view>
 
   <view class="card form-card">
     <view class="field">
@@ -27,7 +28,7 @@
   <view class="preview">从 {{startDate}} 开始，连续 21 天每天 {{scheduledLocalTime}} 记录，之后停 7 天。</view>
 
   <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">
-    保存并开启下一次微信提醒
+    {{isEditing ? '保存修改并开启提醒' : '保存并开启下一次微信提醒'}}
   </button>
   <view wx:if="{{errorMessage}}" class="error error-message">{{errorMessage}}</view>
 </view>

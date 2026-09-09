@@ -31,15 +31,21 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
     throw new BusinessError('NOT_ACTIVE_DAY', '今天是停药日，无需记录')
   }
 
-  const id = occurrenceId(regimen._id, today)
-  const evidence = await validatePhotoEvidence(context, payload.evidence, id, payload.status)
+  const expectedOccurrenceId = occurrenceId(regimen._id, today)
+  const existingResult = await context.db
+    .collection('dose_records')
+    .where({ ownerUserId: context.userId, localDate: today })
+    .limit(1)
+    .get()
+  const existing = existingResult.data[0] as any | undefined
+  const id = existing?._id ?? expectedOccurrenceId
+  const evidence = await validatePhotoEvidence(context, payload.evidence, expectedOccurrenceId, payload.status)
   const idempotency = await claimIdempotency(context, 'dose.setToday', payload)
   if (idempotency.completedResultRef) {
     const existing = await getDocument<DoseDocument>(context.db.collection('dose_records'), id)
     if (existing) return serializeDose(existing)
   }
 
-  const existing = await getDocument<any>(context.db.collection('dose_records'), id)
   const revisions = existing?.status && existing.status !== payload.status
     ? [
         ...(existing.revisions ?? []).slice(-9),
@@ -80,7 +86,7 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
 
   const pendingJobs = await context.db
     .collection('reminder_jobs')
-    .where({ occurrenceId: id, recipientUserId: context.userId, status: 'pending' })
+    .where({ localDate: today, recipientUserId: context.userId, status: 'pending' })
     .get()
   for (const job of pendingJobs.data) {
     await context.db.runTransaction(async (transaction: any) => {

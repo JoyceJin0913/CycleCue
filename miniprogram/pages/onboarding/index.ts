@@ -12,20 +12,28 @@ Page({
     startDate: localDateInTimeZone(new Date()),
     scheduledLocalTime: '22:30',
     saving: false,
+    isEditing: false,
+    effectiveHint: '',
     errorMessage: '',
   },
 
   onLoad(options: Record<string, string | undefined>) {
-    if (options.mode === 'edit') void this.loadExistingPlan()
+    const isEditing = options.mode === 'edit'
+    this.setData({ isEditing })
+    if (isEditing) void this.loadExistingPlan()
   },
 
   async loadExistingPlan() {
     try {
       const data = await callApi<BootstrapDto>('bootstrap.get')
-      if (!data.regimen) return
+      const editableRegimen = data.pendingRegimen ?? data.regimen
+      if (!editableRegimen) return
       this.setData({
-        startDate: parseLocalDate(data.regimen.startDate),
-        scheduledLocalTime: data.regimen.scheduledLocalTime,
+        startDate: parseLocalDate(editableRegimen.startDate),
+        scheduledLocalTime: editableRegimen.scheduledLocalTime,
+        effectiveHint: data.pendingRegimen
+          ? '存在一份尚未生效的旧修改，本次保存会替换它并立即生效。'
+          : '保存后立即按新计划计算；今天已有的服药记录和照片会保留。',
       })
     } catch (error) {
       this.setData({ errorMessage: error instanceof Error ? error.message : '读取计划失败' })

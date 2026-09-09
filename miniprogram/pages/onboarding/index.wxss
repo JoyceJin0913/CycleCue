@@ -17,6 +17,16 @@
   line-height: 1.6;
 }
 
+.edit-hint {
+  margin: 24rpx 0;
+  padding: 20rpx 24rpx;
+  border-radius: 18rpx;
+  background: #f1ebf8;
+  color: #654e8c;
+  font-size: 25rpx;
+  line-height: 1.55;
+}
+
 .form-card {
   margin-top: 48rpx;
   padding: 4rpx 32rpx;

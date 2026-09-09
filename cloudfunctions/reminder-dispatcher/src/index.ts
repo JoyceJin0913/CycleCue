@@ -29,7 +29,7 @@ export async function main() {
     if (!job) continue
 
     try {
-      if (await doseRecordExists(job.occurrenceId)) {
+      if (await doseRecordExists(job.recipientUserId, job.localDate)) {
         await skipAlreadyRecorded(job, now)
         skipped += 1
         continue
@@ -105,8 +105,9 @@ async function quarantineExpiredDispatches(now: Date): Promise<void> {
   }
 }
 
-async function doseRecordExists(occurrenceId: string): Promise<boolean> {
-  return Boolean(await getDocument('dose_records', occurrenceId))
+async function doseRecordExists(ownerUserId: string, localDate: string): Promise<boolean> {
+  const result = await db.collection('dose_records').where({ ownerUserId, localDate }).limit(1).get()
+  return result.data.length > 0
 }
 
 async function skipAlreadyRecorded(job: any, now: Date): Promise<void> {

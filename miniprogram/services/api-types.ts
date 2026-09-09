@@ -12,6 +12,7 @@ export interface RegimenDto {
   startDate: string
   scheduledLocalTime: string
   cycleDay: number | null
+  effectiveFrom?: string
 }
 
 export interface TodayDto {
@@ -69,6 +70,7 @@ export interface BootstrapDto {
   hasRegimen: boolean
   hasCareLinks: boolean
   regimen: RegimenDto | null
+  pendingRegimen: RegimenDto | null
   today: TodayDto | null
   reminder: ReminderCoverageDto
 }

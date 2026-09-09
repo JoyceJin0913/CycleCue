@@ -60,10 +60,12 @@ export async function todayView(
 
   const plan = getPlanDay(parseLocalDate(regimen.startDate), today)
   const plannedAt = localDateTimeToUtc(today, regimen.scheduledLocalTime)
-  const record = await getDocument<DoseDocument>(
-    context.db.collection('dose_records'),
-    occurrenceId(regimen._id, today),
-  )
+  const recordResult = await context.db
+    .collection('dose_records')
+    .where({ ownerUserId, localDate: today })
+    .limit(1)
+    .get()
+  const record = (recordResult.data[0] ?? null) as DoseDocument | null
   let nextActiveDate: LocalDate | null = null
   for (let cursor = addCalendarDays(today, plan.status === 'active' ? 1 : 0), count = 0; count < 35; count += 1) {
     const version = regimenForDate(versions, cursor) ?? regimen

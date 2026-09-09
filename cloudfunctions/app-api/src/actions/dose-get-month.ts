@@ -10,7 +10,6 @@ import {
 import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
 import { listRegimens, regimenForDate } from '../helpers'
-import { occurrenceId } from '../view'
 
 interface GetMonthPayload {
   yearMonth?: unknown
@@ -34,7 +33,7 @@ export async function doseGetMonth(context: AppContext, payload: GetMonthPayload
       localDate: context.command.gte(gridStart).and(context.command.lte(gridEnd)),
     })
     .get()
-  const records = new Map(recordsResult.data.map((record: any) => [record._id, record]))
+  const records = new Map(recordsResult.data.map((record: any) => [record.localDate, record]))
 
   const cells = Array.from({ length: 42 }, (_, index) => {
     const localDate = fromCivilDayOrdinal(civilDayOrdinal(gridStart) + index)
@@ -49,7 +48,7 @@ export async function doseGetMonth(context: AppContext, payload: GetMonthPayload
     }
 
     const plan = getPlanDay(parseLocalDate(regimen.startDate), localDate)
-    const record = records.get(occurrenceId(regimen._id, localDate)) as any
+    const record = records.get(localDate) as any
     const plannedAt = localDateTimeToUtc(localDate, regimen.scheduledLocalTime)
     return {
       localDate,
