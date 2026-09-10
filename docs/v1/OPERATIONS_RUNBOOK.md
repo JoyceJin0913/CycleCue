@@ -217,16 +217,16 @@ CloudBase Node 函数入口必须使用 `<文件名>.<导出函数名>`，例如
 责任：你在微信公众平台选择模板，Codex 根据实际字段修改代码。
 
 1. 进入微信公众平台的“订阅消息”；
-2. 从当前小程序类目允许的公共模板库选择一次性订阅模板；
-3. 选择能表达“记录提醒、提醒时间、提示内容”的字段；
-4. 保存后把模板 ID 和字段名/类型截图提供给 Codex；
+2. 保留现有本人“吃药提醒”模板；
+3. 再选择一个供朋友接收的模板，优先选择能表达“提醒事项、提醒时间、温馨提示”的记录提醒，不使用会暴露药品名称的字段；
+4. 保存后把第二个模板 ID 和字段名/类型截图提供给 Codex；
 5. 不需要提供 AppSecret。
 
 Codex 随后负责：
 
-- 把模板 ID 写入客户端 `runtime.ts`；
-- 给两个函数配置同一 `SELF_DUE_TEMPLATE_ID`；
-- 把 dispatcher 中占位的 `thing1`、`time2`、`thing3` 改为实际字段；
+- 把两个模板 ID 分别写入客户端 `runtime.ts`；
+- 给两个函数配置 `SELF_DUE_TEMPLATE_ID` 和 `CAREGIVER_OVERDUE_TEMPLATE_ID`；
+- 按第二个模板核对 dispatcher 的朋友提醒字段映射；
 - 补充测试并提交代码。
 
 模板 ID不是秘密，因为客户端调用 `wx.requestSubscribeMessage` 时本来就需要它。
@@ -246,13 +246,15 @@ tcb fn detail reminder-dispatcher --json
 在 CloudBase 控制台确认：
 
 - `reminder-dispatcher` 已部署为普通 Event 函数，不是 HTTP 函数；
-- 两个函数都有 `SELF_DUE_TEMPLATE_ID` 和 `MINIPROGRAM_STATE=developer`；
+- 两个函数都有 `SELF_DUE_TEMPLATE_ID`、`CAREGIVER_OVERDUE_TEMPLATE_ID` 和 `MINIPROGRAM_STATE=developer`；
 - `reminder-dispatcher` 获得 `subscribeMessage.send` OpenAPI 权限；
 - `dispatch-every-minute` 触发器存在，cron 为 `0 * * * * * *`；
 - 如果声明式部署没有创建触发器，再显式执行 `tcb fn trigger create`，不可假设已生效；
 - 日志中没有循环报错。
 
-真实验证顺序：先部署函数但暂不启用 trigger → 真机同意一次订阅 → 确认 `subscription_grants` 和 `reminder_jobs` 正确 → 启用 trigger → 设置数分钟后的提醒 → 验证收到一次消息 → 验证已记录后不再发送。
+本人提醒真实验证顺序：先部署函数但暂不启用 trigger → 真机同意一次订阅 → 确认 `subscription_grants` 和 `reminder_jobs` 正确 → 启用 trigger → 设置数分钟后的提醒 → 验证收到一次消息 → 验证已记录后不再发送。
+
+朋友提醒需使用两个微信账号验证：服药者允许指定朋友 → 朋友点击“开启下一次提醒”并同意 → 确认任务时间等于计划时间加 30 分钟 → 未记录时朋友收到不含药名的消息 → 已服时不发送且同一授权顺延 → 关闭提醒或结束关系后不再发送。
 
 ### H. 配置本机 `miniprogram-ci`
 

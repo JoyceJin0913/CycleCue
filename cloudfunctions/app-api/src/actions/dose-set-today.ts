@@ -18,6 +18,7 @@ import {
 } from '../helpers'
 import { occurrenceId, type DoseDocument } from '../view'
 import { allocateAvailableGrants } from './subscription'
+import { refreshCaregiverRemindersForOwner } from '../care-reminders'
 
 interface SetTodayPayload {
   status?: unknown
@@ -91,11 +92,18 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
     await transaction.collection('dose_records').doc(id).set({ data: withoutDocumentId(document) })
   })
 
-  const pendingJobs = await context.db
+  const pendingJobResult = await context.db
     .collection('reminder_jobs')
-    .where({ localDate: today, recipientUserId: context.userId, status: 'pending' })
+    .where({
+      localDate: today,
+      recipientUserId: context.userId,
+      status: 'pending',
+    })
     .get()
-  for (const job of pendingJobs.data) {
+  const pendingJobs = pendingJobResult.data.filter(
+    (job: any) => !job.templateKey || job.templateKey === 'SELF_DUE',
+  )
+  for (const job of pendingJobs) {
     await context.db.runTransaction(async (transaction: any) => {
       await transaction.collection('reminder_jobs').doc(job._id).update({
         data: { status: 'skipped_already_recorded', updatedAt: context.serverNow },
@@ -107,12 +115,18 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
   }
 
   const templateId = process.env.SELF_DUE_TEMPLATE_ID
-  if (pendingJobs.data.length > 0 && templateId && templateId !== 'configure-in-cloud-console') {
+  if (pendingJobs.length > 0 && templateId && templateId !== 'configure-in-cloud-console') {
     try {
       await allocateAvailableGrants(context, templateId)
     } catch {
       console.error(JSON.stringify({ event: 'grant.reallocation_failed', requestId: context.requestId }))
     }
+  }
+
+  try {
+    await refreshCaregiverRemindersForOwner(context)
+  } catch {
+    console.error(JSON.stringify({ event: 'care_reminder.refresh_after_record_failed', requestId: context.requestId }))
   }
 
   await completeIdempotency(context, idempotency.id, id)

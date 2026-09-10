@@ -10,9 +10,9 @@
 | `care_invites` | `owner_status_expires_at` | `ownerUserId ASC, status ASC, expiresAt ASC` | 查询有效邀请与过期清理 |
 | `care_links` | `owner_status` | `ownerUserId ASC, status ASC` | Owner 查询监督者与人数限制 |
 | `care_links` | `caregiver_status` | `caregiverUserId ASC, status ASC` | 朋友查询正在关注的人 |
-| `subscription_grants` | `recipient_template_status_accepted` | `recipientUserId ASC, templateKey ASC, status ASC, acceptedAt ASC` | 查找可用授权 |
+| `subscription_grants` | `recipient_template_status_accepted` | `recipientUserId ASC, templateKey ASC, status ASC, acceptedAt ASC` | 查找本人或朋友的可用授权 |
 | `reminder_jobs` | `status_scheduled_at` | `status ASC, scheduledAt ASC` | dispatcher 到期扫描 |
-| `reminder_jobs` | `recipient_status_scheduled_at` | `recipientUserId ASC, status ASC, scheduledAt ASC` | 今日提醒覆盖 |
+| `reminder_jobs` | `recipient_status_scheduled_at` | `recipientUserId ASC, status ASC, scheduledAt ASC` | 本人和朋友的下一次提醒覆盖 |
 | `idempotency_requests` | `user_expires_at` | `userId ASC, expiresAt ASC` | 维护与过期清理 |
 
 `_id` 自带唯一性，以下唯一语义通过确定性 `_id` 实现：
@@ -23,3 +23,4 @@
 - idempotency：`hash(userId + action + requestId)`。
 - care invite：数据库 `_id = sha256(rawToken)`，原始 token 只存在于分享路径；
 - care link：`hash(ownerUserId + caregiverUserId + "care-link")`。
+- caregiver reminder job：`hash(grantId + "care-overdue-job")`，未实际发送时可顺延到下一个计划日。

@@ -18,15 +18,20 @@ import {
   withoutDocumentId,
 } from '../helpers'
 import { occurrenceId, reminderCoverage } from '../view'
+import { CARE_OVERDUE_TEMPLATE_KEY, registerCareOverdueSubscription } from '../care-reminders'
 
 interface RegisterPayload {
   templateKey?: unknown
   source?: unknown
+  relationshipId?: unknown
 }
 
 const allowedSources = new Set(['onboarding', 'dose_confirm', 'manual_enable'])
 
 export async function subscriptionRegister(context: AppContext, payload: RegisterPayload) {
+  if (payload.templateKey === CARE_OVERDUE_TEMPLATE_KEY) {
+    return registerCareOverdueSubscription(context, payload.relationshipId, payload.source)
+  }
   if (payload.templateKey !== 'SELF_DUE' || typeof payload.source !== 'string' || !allowedSources.has(payload.source)) {
     throw new BusinessError('INVALID_SUBSCRIPTION', '提醒授权信息无效')
   }

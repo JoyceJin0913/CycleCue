@@ -1,7 +1,7 @@
 <view class="page care-page">
   <view class="intro">
     <view class="page-title">朋友监督</view>
-    <view class="muted">朋友只能看到每日记录状态，不会看到照片。</view>
+    <view class="muted">朋友只能看到每日记录状态；经双方同意，也可以在逾期 30 分钟后收到一次提醒。</view>
   </view>
 
   <view wx:if="{{loading}}" class="card loading muted">正在读取…</view>
@@ -14,18 +14,71 @@
     <view wx:if="{{watching.length}}" class="section">
       <view class="section-title">我在关注</view>
       <view wx:for="{{watching}}" wx:key="relationshipId" class="card person-card">
-        <view class="person-name">{{item.ownerLabel}}</view>
+        <view class="person-header">
+          <view class="person-name">{{item.ownerLabel}}</view>
+          <view class="relationship-badge">关注中</view>
+        </view>
         <view class="status">{{item.statusText}}</view>
         <view wx:if="{{item.today}}" class="muted small">{{item.today.displayDate}} · 计划时间 {{item.today.scheduledLocalTime}}</view>
+
+        <view class="reminder-panel">
+          <view class="reminder-title">逾期 30 分钟提醒</view>
+          <view wx:if="{{!item.overdueNotificationsAllowed}}" class="muted reminder-description">等待对方允许你接收提醒</view>
+          <block wx:elif="{{item.reminder.covered}}">
+            <view class="reminder-description">已开启 · {{item.reminderText}}</view>
+            <view
+              class="text-action danger-action"
+              aria-role="button"
+              data-id="{{item.relationshipId}}"
+              bindtap="disableCareReminder"
+            >关闭下一次提醒</view>
+          </block>
+          <view wx:elif="{{!reminderTemplateConfigured}}" class="muted reminder-description">提醒模板正在配置</view>
+          <view
+            wx:else
+            class="reminder-action {{busyRelationshipId === item.relationshipId ? 'disabled' : ''}}"
+            aria-role="button"
+            data-id="{{item.relationshipId}}"
+            bindtap="enableCareReminder"
+          >开启下一次提醒</view>
+        </view>
+        <view
+          class="text-action quiet-action"
+          aria-role="button"
+          data-id="{{item.relationshipId}}"
+          data-role="caregiver"
+          bindtap="removeRelationship"
+        >停止关注</view>
       </view>
     </view>
 
     <view class="section">
       <view class="section-title">监督我的人</view>
       <view wx:if="{{caregivers.length}}">
-        <view wx:for="{{caregivers}}" wx:key="relationshipId" class="card person-card row-card">
-          <view class="person-name">{{item.caregiverLabel}}</view>
-          <view class="joined">已加入</view>
+        <view wx:for="{{caregivers}}" wx:key="relationshipId" class="card person-card">
+          <view class="permission-row">
+            <view class="permission-copy">
+              <view class="person-name">{{item.caregiverLabel}}</view>
+              <view class="muted small permission-description">允许对方在你逾期 30 分钟后收到提醒</view>
+            </view>
+            <switch
+              color="#735a9d"
+              checked="{{item.overdueNotificationsAllowed}}"
+              disabled="{{busyRelationshipId === item.relationshipId}}"
+              data-id="{{item.relationshipId}}"
+              bindchange="setOverduePermission"
+            />
+          </view>
+          <view wx:if="{{!item.overdueNotificationsAllowed}}" class="muted consent-note">提醒默认关闭，开启后仍需对方在自己的微信中授权。</view>
+          <view wx:elif="{{item.reminder.covered}}" class="consent-note active-consent">对方已开启下一次提醒</view>
+          <view wx:else class="muted consent-note">等待对方在自己的微信中开启下一次提醒。</view>
+          <view
+            class="text-action danger-action"
+            aria-role="button"
+            data-id="{{item.relationshipId}}"
+            data-role="owner"
+            bindtap="removeRelationship"
+          >移除朋友</view>
         </view>
       </view>
       <view wx:else class="card empty-card muted">还没有朋友加入</view>

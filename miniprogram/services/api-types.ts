@@ -56,16 +56,20 @@ export interface CareListDto {
   caregivers: Array<{
     relationshipId: string
     caregiverLabel: string
-    notifyOnOverdue: boolean
+    overdueNotificationsAllowed: boolean
+    reminder: ReminderCoverageDto
   }>
   watching: Array<{
     relationshipId: string
     ownerLabel: string
+    overdueNotificationsAllowed: boolean
+    reminder: ReminderCoverageDto
     today: Pick<
       TodayDto,
       'localDate' | 'displayDate' | 'planStatus' | 'viewState' | 'scheduledLocalTime' | 'recordStatus' | 'lastChangedAt'
     > | null
   }>
+  reminderTemplateConfigured: boolean
   remainingInviteSlots: number
 }
 

@@ -5,11 +5,20 @@ export type SubscriptionChoice = 'accept' | 'reject' | 'ban' | 'filter' | 'unava
 
 const PENDING_KEY = 'cycle-cue:pending-subscriptions'
 
-interface PendingSubscription {
+interface PendingSelfSubscription {
   requestId: string
   templateKey: 'SELF_DUE'
   source: 'onboarding' | 'dose_confirm' | 'manual_enable'
 }
+
+interface PendingCareSubscription {
+  requestId: string
+  templateKey: 'CAREGIVER_OVERDUE'
+  source: 'care_manual'
+  relationshipId: string
+}
+
+type PendingSubscription = PendingSelfSubscription | PendingCareSubscription
 
 function readPending(): PendingSubscription[] {
   return (wx.getStorageSync(PENDING_KEY) as PendingSubscription[] | undefined) ?? []
@@ -20,7 +29,14 @@ function writePending(items: PendingSubscription[]): void {
 }
 
 export async function requestSelfDueSubscription(): Promise<SubscriptionChoice> {
-  const templateId = runtimeConfig.selfDueTemplateId
+  return requestSubscription(runtimeConfig.selfDueTemplateId)
+}
+
+export async function requestCareOverdueSubscription(): Promise<SubscriptionChoice> {
+  return requestSubscription(runtimeConfig.careOverdueTemplateId)
+}
+
+async function requestSubscription(templateId: string): Promise<SubscriptionChoice> {
   if (!templateId || !wx.requestSubscribeMessage) return 'unavailable'
 
   try {
@@ -35,12 +51,31 @@ export async function requestSelfDueSubscription(): Promise<SubscriptionChoice> 
 }
 
 export async function registerAcceptedSubscription(
-  source: PendingSubscription['source'],
+  source: PendingSelfSubscription['source'],
 ): Promise<boolean> {
-  const item: PendingSubscription = {
+  const item: PendingSelfSubscription = {
     requestId: createRequestId(),
     templateKey: 'SELF_DUE',
     source,
+  }
+  const pending = [...readPending(), item]
+  writePending(pending)
+
+  try {
+    await callApi('subscription.register', item, item.requestId)
+    writePending(readPending().filter((candidate) => candidate.requestId !== item.requestId))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function registerAcceptedCareOverdueSubscription(relationshipId: string): Promise<boolean> {
+  const item: PendingCareSubscription = {
+    requestId: createRequestId(),
+    templateKey: 'CAREGIVER_OVERDUE',
+    source: 'care_manual',
+    relationshipId,
   }
   const pending = [...readPending(), item]
   writePending(pending)

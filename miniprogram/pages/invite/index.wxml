@@ -7,13 +7,13 @@
 
   <view wx:elif="{{joined}}" class="card invite-card">
     <view class="success">已加入</view>
-    <view class="muted description">你现在可以查看 {{ownerLabel}} 的每日记录状态，照片不会向你展示。</view>
+    <view class="muted description">你现在可以查看 {{ownerLabel}} 的每日记录状态，照片不会向你展示。对方允许后，你还可以在朋友页开启下一次逾期提醒。</view>
     <button class="primary-button" bindtap="openCarePage">查看今日状态</button>
   </view>
 
   <view wx:else class="card invite-card">
     <view class="description">{{ownerLabel}} 邀请你关注每日记录状态。</view>
-    <view class="privacy-note">你只能看到“已记录、未服或尚未记录”，无法查看照片。</view>
+    <view class="privacy-note">你只能看到“已记录、未服或尚未记录”，无法查看照片和药品信息。提醒功能需要双方分别同意。</view>
     <view class="field-label">对方如何称呼你</view>
     <input class="name-input" maxlength="12" placeholder="例如：小雨" value="{{caregiverLabel}}" bindinput="onLabelInput" />
     <button class="primary-button" loading="{{joining}}" disabled="{{joining}}" bindtap="claimInvite">确认加入</button>

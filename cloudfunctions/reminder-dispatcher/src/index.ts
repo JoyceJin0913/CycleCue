@@ -1,5 +1,19 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import * as cloud from 'wx-server-sdk'
+import {
+  addCalendarDays,
+  careReminderAt,
+  careReminderState,
+  compareLocalDates,
+  cycleForRegimenKind,
+  getPlanDay,
+  isDoseDay,
+  localDateInTimeZone,
+  localDateTimeToUtc,
+  normalizeRegimenKind,
+  parseLocalDate,
+  type CareReminderState,
+} from '../../../packages/domain/src/index'
 import { classifySendFailure } from './error-policy'
 import { buildTemplateData } from './template-data'
 
@@ -30,10 +44,29 @@ export async function main() {
     if (!job) continue
 
     try {
-      if (await doseRecordExists(job.recipientUserId, job.localDate)) {
-        await skipAlreadyRecorded(job, now)
-        skipped += 1
-        continue
+      let templateData
+      let page = 'pages/today/index?from=reminder'
+      if (job.templateKey === 'CAREGIVER_OVERDUE') {
+        const state = await caregiverDispatchState(job)
+        if (state === 'invalid') {
+          await invalidateCareJob(job, now)
+          skipped += 1
+          continue
+        }
+        if (state === 'skip') {
+          await rescheduleCareJob(job, now)
+          skipped += 1
+          continue
+        }
+        templateData = buildTemplateData({ ...job, careState: state })
+        page = 'pages/care/index?from=reminder'
+      } else {
+        if (await doseRecordExists(job.recipientUserId, job.localDate)) {
+          await skipAlreadyRecorded(job, now)
+          skipped += 1
+          continue
+        }
+        templateData = buildTemplateData(job)
       }
 
       const user = await getDocument('users', job.recipientUserId)
@@ -42,10 +75,10 @@ export async function main() {
       await (cloud as any).openapi.subscribeMessage.send({
         touser: user.openid,
         templateId: job.templateId,
-        page: 'pages/today/index?from=reminder',
+        page,
         miniprogramState: process.env.MINIPROGRAM_STATE ?? 'developer',
         lang: 'zh_CN',
-        data: buildTemplateData(job),
+        data: templateData,
       })
 
       await db.runTransaction(async (transaction: any) => {
@@ -65,6 +98,150 @@ export async function main() {
 
   console.log(JSON.stringify({ event: 'reminder.dispatch.completed', sent, skipped, failed }))
   return { sent, skipped, failed }
+}
+
+async function caregiverDispatchState(job: any): Promise<CareReminderState | 'invalid'> {
+  const [link, grant] = await Promise.all([
+    getDocument('care_links', job.careLinkId),
+    getDocument('subscription_grants', job.grantId),
+  ])
+  if (
+    !link ||
+    link.status !== 'active' ||
+    link.ownerAllowsOverdue !== true ||
+    link.ownerUserId !== job.subjectUserId ||
+    link.caregiverUserId !== job.recipientUserId ||
+    !grant ||
+    grant.status !== 'reserved' ||
+    grant.reservedJobId !== job._id
+  ) return 'invalid'
+
+  const record = await doseRecord(job.subjectUserId, job.localDate)
+  return careReminderState(record?.status ?? null)
+}
+
+async function invalidateCareJob(job: any, now: Date): Promise<void> {
+  await db.collection('reminder_jobs').doc(job._id).update({
+    data: { status: 'skipped_relationship_unavailable', updatedAt: now },
+  })
+  const grant = await getDocument('subscription_grants', job.grantId)
+  if (grant?.status === 'reserved') {
+    await db.collection('subscription_grants').doc(job.grantId).update({
+      data: {
+        status: 'invalid',
+        invalidReason: 'relationship_unavailable',
+        updatedAt: now,
+      },
+    })
+  }
+}
+
+async function rescheduleCareJob(job: any, now: Date): Promise<void> {
+  const candidate = await nextCareCandidate(job.subjectUserId, job.localDate, now)
+  if (!candidate) {
+    await db.runTransaction(async (transaction: any) => {
+      await transaction.collection('reminder_jobs').doc(job._id).update({
+        data: { status: 'waiting_for_plan', updatedAt: now },
+      })
+      await transaction.collection('subscription_grants').doc(job.grantId).update({
+        data: { status: 'available', reservedJobId: command.remove(), updatedAt: now },
+      })
+    })
+    return
+  }
+
+  await db.runTransaction(async (transaction: any) => {
+    const linkResult = await transaction.collection('care_links').doc(job.careLinkId).get()
+    const grantResult = await transaction.collection('subscription_grants').doc(job.grantId).get()
+    const link = linkResult.data
+    const grant = grantResult.data
+    if (
+      !link ||
+      link.status !== 'active' ||
+      link.ownerAllowsOverdue !== true ||
+      !grant ||
+      grant.status !== 'reserved' ||
+      grant.reservedJobId !== job._id
+    ) return
+
+    await transaction.collection('reminder_jobs').doc(job._id).update({
+      data: {
+        status: 'pending',
+        regimenVersionId: candidate.regimenVersionId,
+        occurrenceId: candidate.occurrenceId,
+        localDate: candidate.localDate,
+        reminderLocalDate: candidate.reminderLocalDate,
+        subjectScheduledLocalTime: candidate.subjectScheduledLocalTime,
+        scheduledLocalTime: candidate.scheduledLocalTime,
+        regimenKind: candidate.regimenKind,
+        planStatus: candidate.planStatus,
+        scheduledAt: candidate.scheduledAt,
+        attemptCount: 0,
+        dispatchToken: command.remove(),
+        dispatchStartedAt: command.remove(),
+        leaseUntil: command.remove(),
+        updatedAt: now,
+      },
+    })
+    await transaction.collection('subscription_grants').doc(job.grantId).update({
+      data: { updatedAt: now },
+    })
+  })
+}
+
+async function nextCareCandidate(ownerUserId: string, previousLocalDate: string, now: Date): Promise<any | null> {
+  const regimensResult = await db
+    .collection('regimen_versions')
+    .where({ ownerUserId })
+    .orderBy('effectiveFrom', 'asc')
+    .get()
+  const regimens = regimensResult.data
+  const today = localDateInTimeZone(now)
+  const afterPrevious = addCalendarDays(parseLocalDate(previousLocalDate), 1)
+  let cursor = compareLocalDates(afterPrevious, today) > 0 ? afterPrevious : today
+
+  for (let count = 0; count < 370; count += 1, cursor = addCalendarDays(cursor, 1)) {
+    const regimen = [...regimens].reverse().find(
+      (item: any) => item.effectiveFrom <= cursor && (item.effectiveTo === undefined || cursor < item.effectiveTo),
+    )
+    if (!regimen) continue
+    const planStatus = getPlanDay(
+      parseLocalDate(regimen.startDate),
+      cursor,
+      cycleForRegimenKind(normalizeRegimenKind(regimen.regimenKind)),
+    ).status
+    if (!isDoseDay(planStatus)) continue
+    const scheduledAt = careReminderAt(localDateTimeToUtc(cursor, regimen.scheduledLocalTime))
+    if (scheduledAt.getTime() <= now.getTime()) continue
+    const record = await doseRecord(ownerUserId, cursor)
+    if (record?.status === 'taken') continue
+    return {
+      regimenVersionId: regimen._id,
+      occurrenceId: stableId(regimen._id, cursor),
+      localDate: cursor,
+      reminderLocalDate: localDateInTimeZone(scheduledAt),
+      subjectScheduledLocalTime: regimen.scheduledLocalTime,
+      scheduledLocalTime: chinaTime(scheduledAt),
+      regimenKind: normalizeRegimenKind(regimen.regimenKind),
+      planStatus,
+      scheduledAt,
+    }
+  }
+  return null
+}
+
+async function doseRecord(ownerUserId: string, localDate: string): Promise<any | null> {
+  const result = await db.collection('dose_records').where({ ownerUserId, localDate }).limit(1).get()
+  return result.data[0] ?? null
+}
+
+function chinaTime(value: Date): string {
+  const shifted = new Date(value.getTime() + 8 * 60 * 60 * 1000)
+  return `${String(shifted.getUTCHours()).padStart(2, '0')}:${String(shifted.getUTCMinutes()).padStart(2, '0')}`
+}
+
+function stableId(...parts: string[]): string {
+  return createHash('sha256').update(parts.join(':')).digest('hex')
 }
 
 async function claimForAtMostOnce(jobId: string, now: Date): Promise<any | null> {

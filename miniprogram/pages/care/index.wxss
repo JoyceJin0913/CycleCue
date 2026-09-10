@@ -32,11 +32,21 @@
   overflow: hidden;
 }
 
-.row-card {
+.person-header,
+.permission-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
+}
+
+.permission-row {
+  align-items: flex-start;
+}
+
+.permission-copy {
+  min-width: 0;
+  flex: 1;
 }
 
 .person-name {
@@ -56,6 +66,15 @@
   overflow-wrap: anywhere;
 }
 
+.relationship-badge {
+  flex-shrink: 0;
+  padding: 7rpx 14rpx;
+  border-radius: 999rpx;
+  background: #f1ebf8;
+  color: #735a9d;
+  font-size: 21rpx;
+}
+
 .joined {
   flex-shrink: 0;
   color: #5a765f;
@@ -66,6 +85,73 @@
   margin-top: 8rpx;
   font-size: 23rpx;
   line-height: 1.55;
+}
+
+.permission-description {
+  max-width: 470rpx;
+}
+
+.consent-note {
+  margin-top: 20rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.active-consent {
+  color: #5a765f;
+}
+
+.reminder-panel {
+  margin-top: 24rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 18rpx;
+  background: #f7f3fb;
+}
+
+.reminder-title {
+  color: #655d57;
+  font-size: 23rpx;
+  font-weight: 650;
+}
+
+.reminder-description {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.reminder-action {
+  display: inline-flex;
+  min-height: 60rpx;
+  align-items: center;
+  justify-content: center;
+  margin-top: 14rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: #735a9d;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 650;
+}
+
+.reminder-action.disabled {
+  opacity: 0.55;
+}
+
+.text-action {
+  display: inline-block;
+  margin-top: 18rpx;
+  color: #735a9d;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
+.danger-action {
+  color: #8a4f4f;
+}
+
+.quiet-action {
+  color: #827b75;
 }
 
 .field-label {

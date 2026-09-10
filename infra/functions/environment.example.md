@@ -7,6 +7,7 @@
 ```text
 USER_ID_HASH_SECRET=<至少 32 字节随机值>
 SELF_DUE_TEMPLATE_ID=<公众平台的一次性模板 ID>
+CAREGIVER_OVERDUE_TEMPLATE_ID=<朋友逾期记录提醒的一次性模板 ID>
 MINIPROGRAM_STATE=developer
 ```
 
@@ -14,6 +15,7 @@ MINIPROGRAM_STATE=developer
 
 ```text
 SELF_DUE_TEMPLATE_ID=<与 app-api 相同>
+CAREGIVER_OVERDUE_TEMPLATE_ID=<与 app-api 相同>
 MINIPROGRAM_STATE=developer
 ```
 
@@ -21,4 +23,4 @@ MINIPROGRAM_STATE=developer
 
 ## 模板映射发布门槛
 
-`reminder-dispatcher/src/index.ts` 当前使用占位 keyword：`thing1`、`time2`、`thing3`。必须根据公众平台实际选中的模板修改并在体验版真机验证；未确认前不得发布到正式环境。
+本人“吃药提醒”当前使用 `thing1`、`time15`、`thing5`。朋友提醒也暂按这三个字段构建，但必须根据公众平台实际选中的第二个模板核对字段；未确认前保持 `CAREGIVER_OVERDUE_TEMPLATE_ID` 与客户端 `careOverdueTemplateId` 为空，不得发送朋友提醒。

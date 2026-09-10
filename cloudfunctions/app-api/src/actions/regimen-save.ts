@@ -19,6 +19,7 @@ import {
   type RegimenDocument,
 } from '../helpers'
 import { allocateAvailableGrants } from './subscription'
+import { refreshCaregiverRemindersForOwner } from '../care-reminders'
 
 interface SaveRegimenPayload {
   regimenKind?: unknown
@@ -125,6 +126,12 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
     } catch {
       console.error(JSON.stringify({ event: 'grant.reallocation_after_plan_change_failed', requestId: context.requestId }))
     }
+  }
+
+  try {
+    await refreshCaregiverRemindersForOwner(context)
+  } catch {
+    console.error(JSON.stringify({ event: 'care_reminder.refresh_after_plan_change_failed', requestId: context.requestId }))
   }
 
   await completeIdempotency(context, idempotency.id, regimenId)

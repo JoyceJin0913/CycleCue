@@ -3,6 +3,13 @@ import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
 import { ensureUser, getDocument, stableId, withoutDocumentId } from '../helpers'
 import { todayView } from '../view'
+import {
+  cancelCareReminderCoverage,
+  careReminderCoverage,
+  ownerAllowsCareReminder,
+  readRelationshipId,
+  type CareLinkDocument,
+} from '../care-reminders'
 
 const INVITE_TTL_MS = 48 * 60 * 60 * 1000
 const MAX_ACTIVE_CAREGIVERS = 3
@@ -92,6 +99,7 @@ export async function careInviteClaim(
     status: 'active' as const,
     canViewHistoryDays: 0,
     canViewEvidence: false,
+    ownerAllowsOverdue: false,
     notifyOnOverdue: false,
     createdAt: context.serverNow,
   }
@@ -128,12 +136,14 @@ export async function careList(context: AppContext) {
   ])
 
   const watching = await Promise.all(
-    caregiverResult.data.map(async (link: any) => {
+    caregiverResult.data.map(async (link: CareLinkDocument) => {
       const view = await todayView(context, undefined, link.ownerUserId)
       const today = view.today
       return {
         relationshipId: link._id,
         ownerLabel: link.ownerLabel,
+        overdueNotificationsAllowed: ownerAllowsCareReminder(link),
+        reminder: await careReminderCoverage(context, link._id),
         today: today
           ? {
               localDate: today.localDate,
@@ -149,13 +159,80 @@ export async function careList(context: AppContext) {
     }),
   )
 
-  return {
-    caregivers: ownerResult.data.map((link: any) => ({
+  const caregivers = await Promise.all(
+    ownerResult.data.map(async (link: CareLinkDocument) => ({
       relationshipId: link._id,
       caregiverLabel: link.caregiverLabel,
-      notifyOnOverdue: false,
+      overdueNotificationsAllowed: ownerAllowsCareReminder(link),
+      reminder: await careReminderCoverage(context, link._id, link.caregiverUserId),
     })),
+  )
+
+  return {
+    caregivers,
     watching,
+    reminderTemplateConfigured: Boolean(
+      process.env.CAREGIVER_OVERDUE_TEMPLATE_ID &&
+      process.env.CAREGIVER_OVERDUE_TEMPLATE_ID !== 'configure-in-cloud-console'
+    ),
     remainingInviteSlots: Math.max(0, MAX_ACTIVE_CAREGIVERS - ownerResult.data.length),
   }
+}
+
+export async function careOverduePermissionSet(
+  context: AppContext,
+  payload: { relationshipId?: unknown; enabled?: unknown },
+) {
+  const relationshipId = readRelationshipId(payload.relationshipId)
+  if (typeof payload.enabled !== 'boolean') {
+    throw new BusinessError('CARE_PERMISSION_INVALID', '请选择有效的提醒权限')
+  }
+  const link = await getDocument<CareLinkDocument>(context.db.collection('care_links'), relationshipId)
+  if (!link || link.status !== 'active' || link.ownerUserId !== context.userId) {
+    throw new BusinessError('CARE_LINK_FORBIDDEN', '你无法修改这段朋友关系')
+  }
+
+  await context.db.collection('care_links').doc(relationshipId).update({
+    data: {
+      ownerAllowsOverdue: payload.enabled,
+      notifyOnOverdue: payload.enabled,
+      updatedAt: context.serverNow,
+    },
+  })
+  if (!payload.enabled) {
+    await cancelCareReminderCoverage(context, relationshipId, 'cancelled_by_owner')
+  }
+  return { relationshipId, overdueNotificationsAllowed: payload.enabled }
+}
+
+export async function careReminderDisable(context: AppContext, payload: { relationshipId?: unknown }) {
+  const relationshipId = readRelationshipId(payload.relationshipId)
+  const link = await getDocument<CareLinkDocument>(context.db.collection('care_links'), relationshipId)
+  if (!link || link.status !== 'active' || link.caregiverUserId !== context.userId) {
+    throw new BusinessError('CARE_LINK_FORBIDDEN', '你无法关闭这段朋友关系的提醒')
+  }
+  await cancelCareReminderCoverage(context, relationshipId, 'cancelled_by_friend')
+  return { relationshipId, disabled: true }
+}
+
+export async function careLinkRemove(context: AppContext, payload: { relationshipId?: unknown }) {
+  const relationshipId = readRelationshipId(payload.relationshipId)
+  const link = await getDocument<CareLinkDocument>(context.db.collection('care_links'), relationshipId)
+  if (!link || (link.ownerUserId !== context.userId && link.caregiverUserId !== context.userId)) {
+    throw new BusinessError('CARE_LINK_FORBIDDEN', '你无法结束这段朋友关系')
+  }
+  if (link.status === 'active') {
+    await context.db.collection('care_links').doc(relationshipId).update({
+      data: {
+        status: 'inactive',
+        ownerAllowsOverdue: false,
+        notifyOnOverdue: false,
+        endedByUserId: context.userId,
+        endedAt: context.serverNow,
+        updatedAt: context.serverNow,
+      },
+    })
+    await cancelCareReminderCoverage(context, relationshipId, 'relationship_ended')
+  }
+  return { relationshipId, removed: true }
 }

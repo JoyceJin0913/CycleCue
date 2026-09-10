@@ -2,7 +2,7 @@
 
 | 项目 | V1 决定 |
 |---|---|
-| 产品范围 | 首次设置、今日、日历、照片、朋友 |
+| 产品范围 | 首次设置、今日、日历、照片、朋友与朋友逾期提醒 |
 | 支持方案 | 21 天服药 + 7 天停药；优思悦 24 片含药片 + 4 片安慰剂片 |
 | 记录内容 | 已服 / 未服、服务端记录时间、可选本人照片 |
 | 提醒方式 | 微信一次性订阅消息 |
@@ -25,6 +25,7 @@ V1 只验证一个最小闭环：
   → 日历展示周期与历史结果
   → 确认已服时申请下一次微信提醒
   → 可邀请朋友只读查看今日状态
+  → 经双方同意，逾期 30 分钟仍未完成记录时提醒朋友
 ```
 
 V1 不解决“持续响铃”问题，也不尝试绕过微信的一次性订阅限制。微信提醒发送后，本次授权即可能被消耗；用户需要在下一次主动操作时继续授权。
@@ -47,12 +48,14 @@ V1 不解决“持续响铃”问题，也不尝试绕过微信的一次性订�
 - 用户可以从今日页重新进入方案设置，修改日期或时间。
 - 用户可以生成 48 小时、单次领取的邀请，最多建立 3 个朋友关系。
 - 朋友无需建立自己的方案，也能查看受邀用户的今日状态与最后记录时间。
+- 服药者可逐位允许朋友提醒；朋友本人可用一次性订阅开启下一次逾期提醒。
+- 计划时间后 30 分钟仍无记录或明确记录为未服时提醒朋友；已服则不发送，并把未消费授权顺延到下一个计划日。
+- 双方均可关闭提醒或结束朋友关系，停止后不得继续发送。
 
 ### 2.2 明确不实现
 
 - 不单独保存或展示所谓“照片拍摄时间”，只保存服务端记录时间。
 - 不向朋友展示照片、历史月历或药物详情。
-- 不自动向朋友发送逾期提醒；第一版朋友通过打开小程序主动查看。
 - 不接入手机系统日历。
 - 不发送短信、电话、公众号或企业微信消息。
 - 不支持多个药物或多个并行方案。
@@ -424,9 +427,9 @@ function civilDayOrdinal(value: string): number {
 ```ts
 {
   requestId: string
-  templateKey: 'SELF_DUE'
-  source: 'onboarding' | 'dose_confirm' | 'manual_enable'
-  acceptedAt: string
+  templateKey: 'SELF_DUE' | 'CAREGIVER_OVERDUE'
+  source: 'onboarding' | 'dose_confirm' | 'manual_enable' | 'care_manual'
+  relationshipId?: string
 }
 ```
 
@@ -447,6 +450,18 @@ function civilDayOrdinal(value: string): number {
 ```
 
 CloudBase 定时触发器使用七段 cron，并可能在边缘情况下重复触发，所以任务必须幂等。[^5]
+
+### 8.5 朋友逾期提醒
+
+朋友提醒使用独立模板 `CAREGIVER_OVERDUE`，授权归接收消息的朋友本人所有，并绑定一段有效 `care_links` 关系。服药者和朋友双方都同意后，系统把检查时间设为计划服药时间加 30 分钟：
+
+```text
+已服                → 不发送，未消费授权顺延到下一个计划日
+明确记录为未服       → 发送“对方已记录为未服，请联系确认”
+仍无记录             → 发送“对方尚未完成记录，请联系确认”
+```
+
+发送前必须再次验证关系仍为 active、服药者仍允许提醒、grant 仍保留给当前 job。消息不包含药名、方案类型、照片或历史记录。一次实际发送后授权被消费，朋友需要再次主动开启下一次提醒。
 
 ```json
 {
@@ -599,12 +614,15 @@ V1 actions：
 | `dose.setToday` | `taken` 或 `not_taken` | occurrence、firstRecordedAt、lastChangedAt |
 | `photo.prepareUpload` | 文件扩展名、大小 | 一小时有效的 owner-only 上传票据 |
 | `dose.getMonth` | `YYYY-MM` | 42 个日格状态 |
-| `subscription.register` | templateKey、source、accept requestId | 下一次覆盖日期 |
+| `subscription.register` | templateKey、source、accept requestId；朋友提醒另带 relationshipId | 本人或指定朋友关系的下一次提醒覆盖 |
 | `subscription.getStatus` | 无 | 下一次提醒覆盖状态 |
 | `care.invite.create` | 本人自定义称呼 | 48 小时邀请 token |
 | `care.invite.preview` | token | 脱敏邀请摘要 |
 | `care.invite.claim` | token、朋友称呼 | 单次领取并建立关系 |
 | `care.list` | 无 | 与当前用户有关的关系及裁剪后的今日状态 |
+| `care.overduePermission.set` | relationshipId、enabled | 服药者允许或关闭该朋友的逾期提醒 |
+| `care.reminder.disable` | relationshipId | 朋友撤销尚未使用的下一次提醒 |
+| `care.link.remove` | relationshipId | 任一方结束关注关系并取消未发送提醒 |
 
 服务端不接受客户端提供的 `openId`、`ownerId` 或任意 occurrenceId 作为可信身份。今日 occurrence 由服务端按当前方案和日期计算；朋友跨用户读取必须先验证有效 `care_links`，响应永不返回照片字段。
 
@@ -679,10 +697,12 @@ type DoseRecordDoc = {
 type SubscriptionGrantDoc = {
   _id: string
   recipientUserId: string
-  templateKey: 'SELF_DUE'
+  subjectUserId?: string
+  careLinkId?: string
+  templateKey: 'SELF_DUE' | 'CAREGIVER_OVERDUE'
   templateId: string
-  status: 'available' | 'reserved' | 'consumed' | 'invalid'
-  source: 'onboarding' | 'dose_confirm' | 'manual_enable'
+  status: 'available' | 'reserved' | 'consumed' | 'invalid' | 'cancelled_by_friend' | 'cancelled_by_owner' | 'relationship_ended'
+  source: 'onboarding' | 'dose_confirm' | 'manual_enable' | 'care_manual'
   requestId: string
   reservedJobId?: string
   acceptedAt: ServerDate
@@ -699,11 +719,13 @@ type SubscriptionGrantDoc = {
 type ReminderJobDoc = {
   _id: string
   recipientUserId: string
+  subjectUserId?: string
+  careLinkId?: string
   regimenVersionId: string
   occurrenceId: string
   localDate: string
   scheduledAt: ServerDate
-  templateKey: 'SELF_DUE'
+  templateKey: 'SELF_DUE' | 'CAREGIVER_OVERDUE'
   grantId: string
   status:
     | 'pending'
@@ -796,6 +818,7 @@ V1 必须使用事务的操作：
 - `photo_uploads` 保存一小时有效、只能绑定一次的上传票据；图片本体位于私有云存储。
 - `care_invites` 只保存邀请 token 的 SHA-256 摘要，状态为 `pending/claimed`，48 小时过期。
 - `care_links` 保存 owner 与 caregiver 的内部匿名 ID、双方自定义称呼和权限；V1 固定 `canViewEvidence=false`、`canViewHistoryDays=0`。
+- `care_links.ownerAllowsOverdue` 默认 false；朋友的下一次提醒覆盖由 grant/job 派生，不把一次性微信授权误表示为长期订阅。
 - 邀请不能由本人领取，只能成功领取一次；同一 owner 最多 3 个 active 关系。
 
 ## 15. 隐私与安全最低线
@@ -811,6 +834,7 @@ V1 使用用户主动选择的照片，但不获取微信昵称、头像、手�
 - 日志不记录原始 OPENID、用户计划详情或完整消息文案；
 - 照片存储路径使用内部匿名用户 ID，私有存储不生成永久公开链接；
 - 朋友接口仅返回今日状态与记录时间，不返回照片 fileID；
+- 朋友提醒模板不出现药名、方案类型或照片信息；
 - 数据库只保存邀请 token 摘要，不保存分享出去的原始 token；
 - 模板字段严格做长度和字符白名单；
 - `subscription.register` 按用户每天限频；
@@ -854,6 +878,10 @@ V1 使用用户主动选择的照片，但不获取微信昵称、头像、手�
 - 邀请不能自己领取，过期或已领取 token 不能再次领取，第 4 位朋友加入失败。
 - 没有自己方案的朋友从普通入口打开时进入“朋友”页。
 - 朋友能看到今日状态与最后记录时间，但任何响应都不包含照片 fileID。
+- 未经服药者允许时，朋友不能登记提醒授权。
+- 服药者按时记录后，T+30 不发送朋友消息并顺延授权。
+- T+30 明确未服和未记录分别产生准确但不做医学判断的文案。
+- 关闭提醒或结束关系后，dispatcher 发送前复查必须阻止消息。
 
 ### 16.5 真机测试
 
@@ -877,7 +905,7 @@ V1 同时满足以下条件才算完成：
 5. 具备有效授权时，定时任务能在目标分钟附近调用微信发送接口。
 6. 两个不同微信账号完成一次邀请与领取，朋友端无法读取照片。
 7. 照片上传、绑定和本人预览在真机完成一次闭环。
-8. 没有系统日历、自动朋友提醒、多药物或医疗建议入口。
+8. 没有系统日历、多药物或医疗建议入口。
 9. iOS 和 Android 各完成一次完整真机闭环。
 
 ## 17. 开发顺序
@@ -907,6 +935,12 @@ V1 同时满足以下条件才算完成：
 - 完成一次性邀请、最多 3 人限制与朋友只读今日状态。
 - 使用两个不同微信账号验证照片不可见。
 
+### V1.1：朋友逾期提醒
+
+- 增加服药者逐位授权、朋友一次性订阅、关闭提醒与结束关系。
+- 增加计划时间后 30 分钟检查、已服跳过和未消费授权顺延。
+- 使用独立、无药名的朋友提醒模板完成双账号真机测试。
+
 ### V1.0-E：小范围发布
 
 - 配置开发与生产 CloudBase 环境。
@@ -919,11 +953,10 @@ V1 同时满足以下条件才算完成：
 按优先级候选：
 
 1. 系统日历兜底；
-2. 监督者逾期订阅消息与人工升级；
-3. 关系撤销与退出；
-4. 最近日期补记与完整修正历史；
-5. 其他药板方案；
-6. 数据导出和删除能力增强。
+2. 监督者人工升级或多级联系人；
+3. 最近日期补记与完整修正历史；
+4. 其他药板方案；
+5. 数据导出和删除能力增强。
 
 这些功能在当前 V1 范围之外。
 

@@ -45,9 +45,9 @@ export async function reminderCoverage(context: AppContext) {
       scheduledAt: context.command.gt(context.serverNow),
     })
     .orderBy('scheduledAt', 'asc')
-    .limit(1)
+    .limit(20)
     .get()
-  const job = result.data[0]
+  const job = result.data.find((item: any) => !item.templateKey || item.templateKey === 'SELF_DUE')
   return job
     ? { covered: true, localDate: job.localDate, scheduledLocalTime: job.scheduledLocalTime }
     : { covered: false, localDate: null, scheduledLocalTime: null }

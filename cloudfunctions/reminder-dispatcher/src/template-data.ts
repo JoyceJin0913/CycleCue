@@ -1,11 +1,26 @@
 interface ReminderTemplateJob {
   localDate: string
   scheduledLocalTime: string
+  reminderLocalDate?: string
+  templateKey?: string
   regimenKind?: string
   planStatus?: string
+  careState?: 'notify_not_taken' | 'notify_unrecorded'
 }
 
 export function buildTemplateData(job: ReminderTemplateJob) {
+  if (job.templateKey === 'CAREGIVER_OVERDUE') {
+    return {
+      thing1: { value: '好友每日记录' },
+      time15: { value: `${job.reminderLocalDate ?? job.localDate} ${job.scheduledLocalTime}` },
+      thing5: {
+        value: job.careState === 'notify_not_taken'
+          ? '对方已记录为未服，请联系确认'
+          : '对方尚未完成记录，请联系确认',
+      },
+    }
+  }
+
   const isYaz = job.regimenKind === 'yaz_24_4'
   const medicine = isYaz
     ? job.planStatus === 'placebo' ? '优思悦白色片' : '优思悦浅粉色片'

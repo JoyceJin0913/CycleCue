@@ -6,7 +6,15 @@ import { doseSetToday } from './actions/dose-set-today'
 import { photoPrepareUpload } from './actions/photo-prepare-upload'
 import { regimenSave } from './actions/regimen-save'
 import { subscriptionGetStatus, subscriptionRegister } from './actions/subscription'
-import { careInviteClaim, careInviteCreate, careInvitePreview, careList } from './actions/care'
+import {
+  careInviteClaim,
+  careInviteCreate,
+  careInvitePreview,
+  careLinkRemove,
+  careList,
+  careOverduePermissionSet,
+  careReminderDisable,
+} from './actions/care'
 
 type Handler = (context: AppContext, payload: any) => Promise<unknown>
 
@@ -22,6 +30,9 @@ const handlers: Record<string, Handler> = {
   'care.invite.preview': careInvitePreview,
   'care.invite.claim': careInviteClaim,
   'care.list': careList,
+  'care.overduePermission.set': careOverduePermissionSet,
+  'care.reminder.disable': careReminderDisable,
+  'care.link.remove': careLinkRemove,
 }
 
 export async function routeAction(context: AppContext, action: string, payload: unknown) {

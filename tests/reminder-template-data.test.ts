@@ -33,3 +33,29 @@ test('identifies the active and placebo tablets in a Yaz 24+4 pack', () => {
   assert.equal(placebo.thing1.value, '优思悦白色片')
   assert.equal(placebo.thing5.value, '请按药板顺序服用白色片并完成记录')
 })
+
+test('caregiver reminders reveal neither the medicine nor photo details', () => {
+  const unrecorded = buildTemplateData({
+    localDate: '2026-09-11',
+    reminderLocalDate: '2026-09-11',
+    scheduledLocalTime: '23:00',
+    templateKey: 'CAREGIVER_OVERDUE',
+    regimenKind: 'yaz_24_4',
+    careState: 'notify_unrecorded',
+  })
+  const notTaken = buildTemplateData({
+    localDate: '2026-09-11',
+    scheduledLocalTime: '23:00',
+    templateKey: 'CAREGIVER_OVERDUE',
+    careState: 'notify_not_taken',
+  })
+
+  assert.deepEqual(unrecorded, {
+    thing1: { value: '好友每日记录' },
+    time15: { value: '2026-09-11 23:00' },
+    thing5: { value: '对方尚未完成记录，请联系确认' },
+  })
+  assert.equal(notTaken.thing5.value, '对方已记录为未服，请联系确认')
+  assert.equal(JSON.stringify(unrecorded).includes('优思悦'), false)
+  assert.equal(JSON.stringify(unrecorded).includes('照片'), false)
+})
