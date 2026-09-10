@@ -13,19 +13,19 @@
     <view class="field">
       <view class="label">当前药板第一天</view>
       <picker mode="date" value="{{startDate}}" end="{{today}}" bindchange="onDateChange">
-        <view class="picker-value">{{startDate}} <text>›</text></view>
+        <view class="picker-value"><text>{{startDateLabel}}</text><text class="picker-arrow">›</text></view>
       </picker>
     </view>
 
     <view class="field last-field">
       <view class="label">每日提醒时间</view>
       <picker mode="time" value="{{scheduledLocalTime}}" bindchange="onTimeChange">
-        <view class="picker-value">{{scheduledLocalTime}} <text>›</text></view>
+        <view class="picker-value"><text>{{scheduledLocalTime}}</text><text class="picker-arrow">›</text></view>
       </picker>
     </view>
   </view>
 
-  <view class="preview">从 {{startDate}} 开始，连续 21 天每天 {{scheduledLocalTime}} 记录，之后停 7 天。</view>
+  <view class="preview">从 {{startDateLabel}} 开始，连续 21 天每天 {{scheduledLocalTime}} 记录，之后停 7 天。</view>
 
   <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">
     {{isEditing ? '保存修改并开启提醒' : '保存并开启下一次微信提醒'}}

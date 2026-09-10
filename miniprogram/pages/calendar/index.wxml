@@ -1,8 +1,8 @@
 <view class="page calendar-page">
   <view class="month-header">
-    <button class="month-button" bindtap="previousMonth">‹</button>
+    <view class="month-button" aria-role="button" aria-label="上个月" hover-class="month-button-hover" bindtap="previousMonth">‹</view>
     <view class="month-title">{{monthTitle}}</view>
-    <button class="month-button" bindtap="nextMonth">›</button>
+    <view class="month-button" aria-role="button" aria-label="下个月" hover-class="month-button-hover" bindtap="nextMonth">›</view>
   </view>
 
   <view class="weekday-row">
@@ -26,15 +26,15 @@
   </view>
 
   <view class="legend card">
-    <view>● 待服</view>
-    <view>✓ 已服</view>
-    <view>— 未服</view>
-    <view>! 逾期未记录</view>
-    <view>○ 停药日</view>
+    <view class="legend-item">● 待服</view>
+    <view class="legend-item">✓ 已服</view>
+    <view class="legend-item">— 未服</view>
+    <view class="legend-item">! 逾期未记录</view>
+    <view class="legend-item">○ 停药日</view>
   </view>
 
   <view wx:if="{{selectedDetail}}" class="detail card">
-    <view class="detail-date">{{selectedDetail.localDate}}</view>
+    <view class="detail-date">{{selectedDetail.displayDate}}</view>
     <view class="muted">{{selectedDetail.description}}</view>
   </view>
 </view>

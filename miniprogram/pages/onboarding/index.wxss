@@ -9,6 +9,7 @@
   margin-top: 12rpx;
   font-size: 52rpx;
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .intro {
@@ -49,9 +50,32 @@
 
 .fixed-value,
 .picker-value {
-  display: flex;
-  justify-content: space-between;
   font-size: 31rpx;
+}
+
+.fixed-value {
+  line-height: 1.5;
+}
+
+.picker-value {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.picker-value > text:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-arrow {
+  flex-shrink: 0;
+  margin-left: 20rpx;
+  color: #735a9d;
+  font-size: 38rpx;
 }
 
 .preview {
@@ -63,5 +87,10 @@
 
 .error-message {
   margin-top: 24rpx;
+  line-height: 1.55;
   text-align: center;
+}
+
+.setup-page .primary-button {
+  font-size: 29rpx;
 }

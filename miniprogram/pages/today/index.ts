@@ -5,6 +5,7 @@ import {
   registerAcceptedSubscription,
   requestSelfDueSubscription,
 } from '../../services/subscription'
+import { formatChinaTimestamp, formatShortLocalDate } from '../../utils/display'
 
 const emptyToday: TodayDto = {
   localDate: '',
@@ -37,9 +38,19 @@ const emptyReminder: ReminderCoverageDto = {
 function stateCopy(today: TodayDto): { kicker: string; title: string; description: string } {
   switch (today.viewState) {
     case 'before_start':
-      return { kicker: '计划尚未开始', title: '今天无需记录', description: `计划从 ${today.nextActiveDate ?? '稍后'} 开始` }
+      return {
+        kicker: '计划尚未开始',
+        title: '今天无需记录',
+        description: `计划从 ${
+          today.nextActiveDate ? formatShortLocalDate(today.nextActiveDate, today.localDate) : '稍后'
+        } 开始`,
+      }
     case 'break':
-      return { kicker: `本周期第 ${today.cycleDay ?? '-'} 天`, title: '今天是停药日', description: `下次服药：${today.nextActiveDate ?? '-'}` }
+      return {
+        kicker: `本周期第 ${today.cycleDay ?? '-'} 天`,
+        title: '今天是停药日',
+        description: `下次服药：${formatShortLocalDate(today.nextActiveDate, today.localDate)}`,
+      }
     case 'taken':
       return { kicker: '今日记录', title: '今天已记录', description: '状态：已服' }
     case 'not_taken':
@@ -103,7 +114,7 @@ Page({
     const showEditRecord = today.viewState === 'taken' || today.viewState === 'not_taken'
     const timestamp = today.lastChangedAt ?? today.firstRecordedAt
     const reminderText = reminder.covered
-      ? `${reminder.localDate} ${reminder.scheduledLocalTime}`
+      ? `${formatShortLocalDate(reminder.localDate, today.localDate)} ${reminder.scheduledLocalTime}`
       : '下一次微信提醒未开启'
 
     this.setData({
@@ -114,7 +125,7 @@ Page({
       stateTitle: copy.title,
       stateDescription: copy.description,
       reminderText,
-      recordedTimeText: timestamp ? `记录于 ${timestamp}` : '',
+      recordedTimeText: timestamp ? `记录于 ${formatChinaTimestamp(timestamp, today.localDate)}` : '',
       showRecordActions,
       showEditRecord,
       pendingPhotoPath: '',

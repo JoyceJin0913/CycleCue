@@ -1,25 +1,35 @@
 .topline {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24rpx;
 }
 
+.topline > view:first-child {
+  min-width: 0;
+}
+
 .date {
   font-size: 36rpx;
   font-weight: 650;
+  white-space: nowrap;
 }
 
 .cycle {
   margin-top: 8rpx;
   font-size: 24rpx;
+  white-space: nowrap;
 }
 
 .settings-link {
   display: flex;
+  height: 60rpx;
   flex-shrink: 0;
   align-items: center;
   gap: 8rpx;
+  width: auto;
+  min-width: 0;
   margin: 0;
   padding: 0 22rpx 0 26rpx;
   border: 1rpx solid rgba(115, 90, 157, 0.14);
@@ -32,8 +42,9 @@
   white-space: nowrap;
 }
 
-.settings-link::after {
-  border: 0;
+.settings-link-hover,
+.reminder-button-hover {
+  opacity: 0.72;
 }
 
 .settings-arrow {
@@ -48,6 +59,14 @@
   text-align: center;
 }
 
+.state-card .error {
+  line-height: 1.55;
+}
+
+.state-card .error + .secondary-button {
+  margin-top: 20rpx;
+}
+
 .state-kicker {
   color: #735a9d;
   font-size: 24rpx;
@@ -58,11 +77,14 @@
   margin-top: 14rpx;
   font-size: 48rpx;
   font-weight: 720;
+  line-height: 1.22;
 }
 
 .planned {
   margin-top: 16rpx;
   font-size: 27rpx;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .main-action {
@@ -82,6 +104,7 @@
   margin-top: 36rpx;
   border-radius: 20rpx;
   background: #f0eaf7;
+  overflow: hidden;
 }
 
 .pending-photo + .main-action {
@@ -106,9 +129,12 @@
   margin: 48rpx 0 16rpx;
   color: #5a765f;
   font-size: 28rpx;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .reminder {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -128,6 +154,7 @@
 }
 
 .reminder-value {
+  max-width: 100%;
   overflow: hidden;
   margin-top: 8rpx;
   font-size: 26rpx;
@@ -136,7 +163,14 @@
 }
 
 .reminder-button {
+  box-sizing: border-box;
+  display: flex;
+  width: 270rpx;
+  max-width: 46%;
+  height: 64rpx;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   margin: 0;
   padding: 0 20rpx;
   border-radius: 999rpx;
@@ -144,10 +178,9 @@
   color: #735a9d;
   font-size: 23rpx;
   line-height: 64rpx;
-}
-
-.reminder-button::after {
-  border: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .medical-note {

@@ -5,11 +5,13 @@ import {
   registerAcceptedSubscription,
   requestSelfDueSubscription,
 } from '../../services/subscription'
+import { formatFullLocalDate } from '../../utils/display'
 
 Page({
   data: {
     today: localDateInTimeZone(new Date()),
     startDate: localDateInTimeZone(new Date()),
+    startDateLabel: formatFullLocalDate(localDateInTimeZone(new Date())),
     scheduledLocalTime: '22:30',
     saving: false,
     isEditing: false,
@@ -30,6 +32,7 @@ Page({
       if (!editableRegimen) return
       this.setData({
         startDate: parseLocalDate(editableRegimen.startDate),
+        startDateLabel: formatFullLocalDate(editableRegimen.startDate),
         scheduledLocalTime: editableRegimen.scheduledLocalTime,
         effectiveHint: data.pendingRegimen
           ? '存在一份尚未生效的旧修改，本次保存会替换它并立即生效。'
@@ -41,7 +44,8 @@ Page({
   },
 
   onDateChange(event: WechatMiniprogram.PickerChange) {
-    this.setData({ startDate: parseLocalDate(String(event.detail.value)) })
+    const startDate = parseLocalDate(String(event.detail.value))
+    this.setData({ startDate, startDateLabel: formatFullLocalDate(startDate) })
   },
 
   onTimeChange(event: WechatMiniprogram.PickerChange) {

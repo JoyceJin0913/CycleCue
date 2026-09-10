@@ -1,6 +1,7 @@
 import { localDateInTimeZone } from '../../domain/local-date'
 import { callApi } from '../../services/api-client'
 import type { CalendarCellDto, MonthDto, TodayViewState } from '../../services/api-types'
+import { formatFullLocalDate } from '../../utils/display'
 
 interface CalendarCellView extends CalendarCellDto {
   symbol: string
@@ -48,7 +49,7 @@ Page({
     loading: true,
     errorMessage: '',
     selectedDate: '',
-    selectedDetail: null as { localDate: string; description: string } | null,
+    selectedDetail: null as { displayDate: string; description: string } | null,
   },
 
   onShow() {
@@ -93,7 +94,7 @@ Page({
     if (!cell) return
     this.setData({
       selectedDate: localDate,
-      selectedDetail: { localDate, description: stateDescription[cell.state] },
+      selectedDetail: { displayDate: formatFullLocalDate(localDate), description: stateDescription[cell.state] },
     })
   },
 })

@@ -4,9 +4,9 @@
       <view class="date">{{today.displayDate}}</view>
       <view wx:if="{{today.cycleDay}}" class="muted cycle">本周期第 {{today.cycleDay}} / 28 天</view>
     </view>
-    <button class="settings-link" bindtap="editPlan">
+    <view class="settings-link" aria-role="button" aria-label="计划设置" hover-class="settings-link-hover" bindtap="editPlan">
       <text>计划设置</text><text class="settings-arrow">›</text>
-    </button>
+    </view>
   </view>
 
   <view wx:if="{{loading}}" class="card state-card muted">正在同步今天的计划…</view>
@@ -58,7 +58,7 @@
       <view class="reminder-label">微信提醒</view>
       <view class="reminder-value">{{reminderText}}</view>
     </view>
-    <button wx:if="{{!reminder.covered}}" class="reminder-button" bindtap="enableReminder">开启下一次提醒</button>
+    <view wx:if="{{!reminder.covered}}" class="reminder-button" aria-role="button" aria-label="开启下一次提醒" hover-class="reminder-button-hover" bindtap="enableReminder">开启下一次提醒</view>
   </view>
 
   <view wx:if="{{today.viewState === 'not_taken'}}" class="medical-note muted">
