@@ -22,15 +22,21 @@
     "list": [
       {
         "pagePath": "pages/today/index",
-        "text": "今日"
+        "text": "今日",
+        "iconPath": "assets/tabbar/today.png",
+        "selectedIconPath": "assets/tabbar/today-selected.png"
       },
       {
         "pagePath": "pages/calendar/index",
-        "text": "日历"
+        "text": "日历",
+        "iconPath": "assets/tabbar/calendar.png",
+        "selectedIconPath": "assets/tabbar/calendar-selected.png"
       },
       {
         "pagePath": "pages/care/index",
-        "text": "朋友"
+        "text": "朋友",
+        "iconPath": "assets/tabbar/friends.png",
+        "selectedIconPath": "assets/tabbar/friends-selected.png"
       }
     ]
   },
