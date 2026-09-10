@@ -13,6 +13,17 @@ test('recorded facts take precedence on active days', () => {
   )
 })
 
+test('placebo tablets remain scheduled record days', () => {
+  assert.equal(
+    deriveDayViewState({ planStatus: 'placebo', recordStatus: null, plannedAtMs: 200, nowMs: 100 }),
+    'future',
+  )
+  assert.equal(
+    deriveDayViewState({ planStatus: 'placebo', recordStatus: 'taken', plannedAtMs: 200, nowMs: 100 }),
+    'taken',
+  )
+})
+
 test('derives future and overdue without medical interpretation', () => {
   assert.equal(
     deriveDayViewState({ planStatus: 'active', recordStatus: null, plannedAtMs: 200, nowMs: 100 }),

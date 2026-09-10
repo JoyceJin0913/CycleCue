@@ -1,13 +1,22 @@
 import {
   addCalendarDays,
   getPlanDay,
+  isDoseDay,
   localDateInTimeZone,
   localDateTimeToUtc,
   parseLocalDate,
 } from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
-import { getDocument, listRegimens, regimenForDate, stableId, withoutDocumentId } from '../helpers'
+import {
+  getDocument,
+  listRegimens,
+  regimenCycleOf,
+  regimenForDate,
+  regimenKindOf,
+  stableId,
+  withoutDocumentId,
+} from '../helpers'
 import { occurrenceId, reminderCoverage } from '../view'
 
 interface RegisterPayload {
@@ -87,12 +96,16 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
       jobId: string
       scheduledAt: Date
       scheduledLocalTime: string
+      regimenKind: string
+      planStatus: 'active' | 'placebo'
       replacesExistingJob: boolean
     } | null = null
 
     for (let count = 0; count < 370; count += 1, cursor = addCalendarDays(cursor, 1)) {
       const regimen = regimenForDate(regimens, cursor)
-      if (!regimen || getPlanDay(parseLocalDate(regimen.startDate), cursor).status !== 'active') continue
+      if (!regimen) continue
+      const planStatus = getPlanDay(parseLocalDate(regimen.startDate), cursor, regimenCycleOf(regimen)).status
+      if (!isDoseDay(planStatus)) continue
       const scheduledAt = localDateTimeToUtc(cursor, regimen.scheduledLocalTime)
       if (scheduledAt.getTime() <= context.serverNow.getTime()) continue
       const recorded = await context.db
@@ -112,6 +125,8 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
         jobId,
         scheduledAt,
         scheduledLocalTime: regimen.scheduledLocalTime,
+        regimenKind: regimenKindOf(regimen),
+        planStatus,
         replacesExistingJob: Boolean(job),
       }
       cursor = addCalendarDays(cursor, 1)
@@ -132,6 +147,8 @@ export async function allocateAvailableGrants(context: AppContext, templateId: s
           occurrenceId: candidate!.occurrence,
           localDate: candidate!.localDate,
           scheduledLocalTime: candidate!.scheduledLocalTime,
+          regimenKind: candidate!.regimenKind,
+          planStatus: candidate!.planStatus,
           scheduledAt: candidate!.scheduledAt,
           templateKey: 'SELF_DUE',
           templateId,

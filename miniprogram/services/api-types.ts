@@ -1,4 +1,6 @@
 export type RecordStatus = 'taken' | 'not_taken' | null
+export type RegimenKind = 'standard_21_7' | 'yaz_24_4'
+export type PlanStatus = 'before_start' | 'active' | 'placebo' | 'break'
 export type TodayViewState =
   | 'before_start'
   | 'break'
@@ -9,8 +11,13 @@ export type TodayViewState =
 
 export interface RegimenDto {
   id: string
+  regimenKind: RegimenKind
   startDate: string
   scheduledLocalTime: string
+  activeDays: number
+  placeboDays: number
+  breakDays: number
+  cycleLength: number
   cycleDay: number | null
   effectiveFrom?: string
 }
@@ -18,9 +25,11 @@ export interface RegimenDto {
 export interface TodayDto {
   localDate: string
   displayDate: string
-  planStatus: 'before_start' | 'active' | 'break'
+  regimenKind: RegimenKind
+  planStatus: PlanStatus
   viewState: TodayViewState
   cycleDay: number | null
+  cycleLength: number
   scheduledLocalTime: string
   nextActiveDate: string | null
   recordStatus: RecordStatus
@@ -79,6 +88,8 @@ export interface CalendarCellDto {
   localDate: string
   dayOfMonth: number
   inCurrentMonth: boolean
+  regimenKind: RegimenKind | null
+  planStatus: PlanStatus
   state: TodayViewState
 }
 

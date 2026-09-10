@@ -10,6 +10,14 @@ const statusText: Record<TodayViewState, string> = {
   not_taken: '今天记录为未服',
 }
 
+function statusForToday(today: NonNullable<CareListDto['watching'][number]['today']>): string {
+  if (today.planStatus === 'placebo') {
+    if (today.viewState === 'future') return '今天需要服用白色片'
+    if (today.viewState === 'unrecorded_overdue') return '白色片尚未记录'
+  }
+  return statusText[today.viewState]
+}
+
 Page({
   data: {
     loading: true,
@@ -50,7 +58,7 @@ Page({
         caregivers: data.caregivers,
         watching: data.watching.map((item) => ({
           ...item,
-          statusText: item.today ? statusText[item.today.viewState] : '对方尚未设置计划',
+          statusText: item.today ? statusForToday(item.today) : '对方尚未设置计划',
         })),
         remainingInviteSlots: data.remainingInviteSlots,
       })

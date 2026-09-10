@@ -1,7 +1,7 @@
-import { getPlanDay, localDateInTimeZone, parseLocalDate } from '../../../../packages/domain/src/index'
+import { getPlanDay, isDoseDay, localDateInTimeZone, parseLocalDate } from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
-import { getDocument, listRegimens, regimenForDate, stableId } from '../helpers'
+import { getDocument, listRegimens, regimenCycleOf, regimenForDate, stableId } from '../helpers'
 import { occurrenceId } from '../view'
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024
@@ -23,8 +23,8 @@ export async function photoPrepareUpload(context: AppContext, payload: PreparePh
 
   const today = localDateInTimeZone(context.serverNow)
   const regimen = regimenForDate(await listRegimens(context), today)
-  if (!regimen || getPlanDay(parseLocalDate(regimen.startDate), today).status !== 'active') {
-    throw new BusinessError('NOT_ACTIVE_DAY', '今天是停药日，无需拍照记录')
+  if (!regimen || !isDoseDay(getPlanDay(parseLocalDate(regimen.startDate), today, regimenCycleOf(regimen)).status)) {
+    throw new BusinessError('NOT_ACTIVE_DAY', '今天无需服药，无需拍照记录')
   }
 
   const uploadId = stableId(context.userId, 'photo-upload', context.requestId)

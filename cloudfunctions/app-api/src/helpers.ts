@@ -1,4 +1,10 @@
 import { createHash } from 'node:crypto'
+import {
+  cycleForRegimenKind,
+  normalizeRegimenKind,
+  type RegimenCycle,
+  type RegimenKind,
+} from '../../../packages/domain/src/index'
 import { BusinessError } from './errors'
 import type { AppContext } from './context'
 
@@ -40,15 +46,25 @@ export async function ensureUser(context: AppContext): Promise<void> {
 export interface RegimenDocument {
   _id: string
   ownerUserId: string
+  regimenKind?: RegimenKind
   startDate: string
-  activeDays: 21
-  breakDays: 7
+  activeDays: number
+  placeboDays?: number
+  breakDays: number
   scheduledLocalTime: string
   timezone: 'Asia/Shanghai'
   effectiveFrom: string
   effectiveTo?: string
   status: 'active' | 'superseded'
   createdAt: Date
+}
+
+export function regimenKindOf(regimen: RegimenDocument): RegimenKind {
+  return normalizeRegimenKind(regimen.regimenKind)
+}
+
+export function regimenCycleOf(regimen: RegimenDocument): RegimenCycle {
+  return cycleForRegimenKind(regimenKindOf(regimen))
 }
 
 export async function listRegimens(context: AppContext): Promise<RegimenDocument[]> {

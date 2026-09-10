@@ -2,7 +2,9 @@
   <view class="topline">
     <view>
       <view class="date">{{today.displayDate}}</view>
-      <view wx:if="{{today.cycleDay}}" class="muted cycle">本周期第 {{today.cycleDay}} / 28 天</view>
+      <view wx:if="{{today.cycleDay}}" class="muted cycle">
+        {{today.regimenKind === 'yaz_24_4' ? '本板第' : '本周期第'}} {{today.cycleDay}} / {{today.cycleLength}} {{today.regimenKind === 'yaz_24_4' ? '片' : '天'}}
+      </view>
     </view>
     <view class="settings-link" aria-role="button" aria-label="计划设置" hover-class="settings-link-hover" bindtap="editPlan">
       <text>计划设置</text><text class="settings-arrow">›</text>

@@ -109,6 +109,10 @@
   color: #735a9d;
 }
 
+.plan-placebo .state-future {
+  color: #9b83bd;
+}
+
 .state-break,
 .state-before_start {
   color: #aaa39d;

@@ -16,13 +16,27 @@ const stateSymbol: Record<TodayViewState, string> = {
   not_taken: '—',
 }
 
-const stateDescription: Record<TodayViewState, string> = {
-  before_start: '方案尚未开始',
-  break: '停药日',
-  future: '服药日，尚未到计划时间',
-  unrecorded_overdue: '服药日，已到时间但尚未记录',
-  taken: '已记录服用',
-  not_taken: '已记录未服',
+function symbolForCell(cell: CalendarCellDto): string {
+  if (cell.planStatus === 'placebo' && cell.state === 'future') return '◇'
+  return stateSymbol[cell.state]
+}
+
+function descriptionForCell(cell: CalendarCellDto): string {
+  if (cell.state === 'before_start') return '方案尚未开始'
+  if (cell.state === 'break') return '停药日'
+
+  const pill = cell.planStatus === 'placebo'
+    ? '白色安慰剂片'
+    : cell.regimenKind === 'yaz_24_4'
+      ? '浅粉色含药片'
+      : '服药日'
+  const status: Record<Exclude<TodayViewState, 'before_start' | 'break'>, string> = {
+    future: '尚未到计划时间',
+    unrecorded_overdue: '已到时间但尚未记录',
+    taken: '已记录服用',
+    not_taken: '已记录未服',
+  }
+  return `${pill} · ${status[cell.state as keyof typeof status]}`
 }
 
 function currentYearMonth(): string {
@@ -64,7 +78,7 @@ Page({
     this.setData({ loading: true, errorMessage: '' })
     try {
       const result = await callApi<MonthDto>('dose.getMonth', { yearMonth: this.data.yearMonth })
-      const cells = result.cells.map((cell) => ({ ...cell, symbol: stateSymbol[cell.state] }))
+      const cells = result.cells.map((cell) => ({ ...cell, symbol: symbolForCell(cell) }))
       this.setData({ cells, loading: false, monthTitle: displayMonth(result.yearMonth) })
     } catch (error) {
       this.setData({
@@ -94,7 +108,7 @@ Page({
     if (!cell) return
     this.setData({
       selectedDate: localDate,
-      selectedDetail: { displayDate: formatFullLocalDate(localDate), description: stateDescription[cell.state] },
+      selectedDetail: { displayDate: formatFullLocalDate(localDate), description: descriptionForCell(cell) },
     })
   },
 })

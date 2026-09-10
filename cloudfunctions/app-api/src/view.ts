@@ -1,14 +1,24 @@
 import {
   addCalendarDays,
+  cycleLength,
   deriveDayViewState,
   getPlanDay,
+  isDoseDay,
   localDateInTimeZone,
   localDateTimeToUtc,
   parseLocalDate,
   type LocalDate,
 } from '../../../packages/domain/src/index'
 import type { AppContext } from './context'
-import { getDocument, listRegimensForUser, regimenForDate, stableId, type RegimenDocument } from './helpers'
+import {
+  getDocument,
+  listRegimensForUser,
+  regimenCycleOf,
+  regimenForDate,
+  regimenKindOf,
+  stableId,
+  type RegimenDocument,
+} from './helpers'
 
 export interface DoseDocument {
   _id: string
@@ -58,7 +68,8 @@ export async function todayView(
   const regimen = regimenForDate(versions, today) ?? versions.find((item) => item.startDate > today) ?? null
   if (!regimen) return { regimen: null, today: null }
 
-  const plan = getPlanDay(parseLocalDate(regimen.startDate), today)
+  const regimenCycle = regimenCycleOf(regimen)
+  const plan = getPlanDay(parseLocalDate(regimen.startDate), today, regimenCycle)
   const plannedAt = localDateTimeToUtc(today, regimen.scheduledLocalTime)
   const recordResult = await context.db
     .collection('dose_records')
@@ -66,11 +77,11 @@ export async function todayView(
     .limit(1)
     .get()
   const record = (recordResult.data[0] ?? null) as DoseDocument | null
-  let nextActiveDate: LocalDate | null = null
-  for (let cursor = addCalendarDays(today, plan.status === 'active' ? 1 : 0), count = 0; count < 35; count += 1) {
+  let nextDoseDate: LocalDate | null = null
+  for (let cursor = addCalendarDays(today, isDoseDay(plan.status) ? 1 : 0), count = 0; count < 35; count += 1) {
     const version = regimenForDate(versions, cursor) ?? regimen
-    if (getPlanDay(parseLocalDate(version.startDate), cursor).status === 'active') {
-      nextActiveDate = cursor
+    if (isDoseDay(getPlanDay(parseLocalDate(version.startDate), cursor, regimenCycleOf(version)).status)) {
+      nextDoseDate = cursor
       break
     }
     cursor = addCalendarDays(cursor, 1)
@@ -81,6 +92,7 @@ export async function todayView(
     today: {
       localDate: today,
       displayDate: displayDate(today),
+      regimenKind: regimenKindOf(regimen),
       planStatus: plan.status,
       viewState: deriveDayViewState({
         planStatus: plan.status,
@@ -89,8 +101,9 @@ export async function todayView(
         nowMs: context.serverNow.getTime(),
       }),
       cycleDay: plan.cycleDay ?? null,
+      cycleLength: cycleLength(regimenCycle),
       scheduledLocalTime: regimen.scheduledLocalTime,
-      nextActiveDate,
+      nextActiveDate: nextDoseDate,
       recordStatus: record?.status ?? null,
       firstRecordedAt: record?.firstRecordedAt?.toISOString() ?? null,
       lastChangedAt: record?.lastChangedAt?.toISOString() ?? null,

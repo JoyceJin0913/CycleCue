@@ -16,7 +16,7 @@
     <view
       wx:for="{{cells}}"
       wx:key="localDate"
-      class="day {{item.inCurrentMonth ? '' : 'outside'}} {{selectedDate === item.localDate ? 'selected' : ''}}"
+      class="day plan-{{item.planStatus}} {{item.inCurrentMonth ? '' : 'outside'}} {{selectedDate === item.localDate ? 'selected' : ''}}"
       data-date="{{item.localDate}}"
       bindtap="selectDate"
     >
@@ -27,6 +27,7 @@
 
   <view class="legend card">
     <view class="legend-item">● 待服</view>
+    <view class="legend-item">◇ 白色安慰剂片</view>
     <view class="legend-item">✓ 已服</view>
     <view class="legend-item">— 未服</view>
     <view class="legend-item">! 逾期未记录</view>

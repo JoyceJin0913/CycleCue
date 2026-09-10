@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import * as cloud from 'wx-server-sdk'
 import { classifySendFailure } from './error-policy'
+import { buildTemplateData } from './template-data'
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
@@ -154,14 +155,6 @@ async function handleSendFailure(job: any, error: unknown, now: Date): Promise<v
       },
     })
   })
-}
-
-function buildTemplateData(job: any) {
-  return {
-    thing1: { value: '每日记录' },
-    time15: { value: `${job.localDate} ${job.scheduledLocalTime}` },
-    thing5: { value: '请进入小程序完成今日记录' },
-  }
 }
 
 async function getDocument(collectionName: string, id: string): Promise<any | null> {

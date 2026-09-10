@@ -1,4 +1,10 @@
-import { getPlanDay, localDateInTimeZone, localDateTimeToUtc, parseLocalDate } from '../../../../packages/domain/src/index'
+import {
+  getPlanDay,
+  isDoseDay,
+  localDateInTimeZone,
+  localDateTimeToUtc,
+  parseLocalDate,
+} from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
 import {
@@ -6,6 +12,7 @@ import {
   completeIdempotency,
   getDocument,
   listRegimens,
+  regimenCycleOf,
   regimenForDate,
   withoutDocumentId,
 } from '../helpers'
@@ -27,8 +34,8 @@ export async function doseSetToday(context: AppContext, payload: SetTodayPayload
 
   const today = localDateInTimeZone(context.serverNow)
   const regimen = regimenForDate(await listRegimens(context), today)
-  if (!regimen || getPlanDay(parseLocalDate(regimen.startDate), today).status !== 'active') {
-    throw new BusinessError('NOT_ACTIVE_DAY', '今天是停药日，无需记录')
+  if (!regimen || !isDoseDay(getPlanDay(parseLocalDate(regimen.startDate), today, regimenCycleOf(regimen)).status)) {
+    throw new BusinessError('NOT_ACTIVE_DAY', '今天无需服药，无需记录')
   }
 
   const expectedOccurrenceId = occurrenceId(regimen._id, today)

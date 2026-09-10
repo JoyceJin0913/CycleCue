@@ -9,7 +9,7 @@ import {
 } from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError } from '../errors'
-import { listRegimens, regimenForDate } from '../helpers'
+import { listRegimens, regimenCycleOf, regimenForDate, regimenKindOf } from '../helpers'
 
 interface GetMonthPayload {
   yearMonth?: unknown
@@ -43,17 +43,21 @@ export async function doseGetMonth(context: AppContext, payload: GetMonthPayload
         localDate,
         dayOfMonth: Number(localDate.slice(8, 10)),
         inCurrentMonth: localDate.startsWith(payload.yearMonth as string),
+        regimenKind: null,
+        planStatus: 'before_start' as const,
         state: 'before_start' as const,
       }
     }
 
-    const plan = getPlanDay(parseLocalDate(regimen.startDate), localDate)
+    const plan = getPlanDay(parseLocalDate(regimen.startDate), localDate, regimenCycleOf(regimen))
     const record = records.get(localDate) as any
     const plannedAt = localDateTimeToUtc(localDate, regimen.scheduledLocalTime)
     return {
       localDate,
       dayOfMonth: Number(localDate.slice(8, 10)),
       inCurrentMonth: localDate.startsWith(payload.yearMonth as string),
+      regimenKind: regimenKindOf(regimen),
+      planStatus: plan.status,
       state: deriveDayViewState({
         planStatus: plan.status,
         recordStatus: record?.status ?? null,

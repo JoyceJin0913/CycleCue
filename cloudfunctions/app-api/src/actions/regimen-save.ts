@@ -1,4 +1,11 @@
-import { compareLocalDates, localDateInTimeZone, localDateTimeToUtc, parseLocalDate } from '../../../../packages/domain/src/index'
+import {
+  compareLocalDates,
+  cycleForRegimenKind,
+  isRegimenKind,
+  localDateInTimeZone,
+  localDateTimeToUtc,
+  parseLocalDate,
+} from '../../../../packages/domain/src/index'
 import type { AppContext } from '../context'
 import { BusinessError, assertString } from '../errors'
 import {
@@ -11,13 +18,17 @@ import {
   withoutDocumentId,
   type RegimenDocument,
 } from '../helpers'
+import { allocateAvailableGrants } from './subscription'
 
 interface SaveRegimenPayload {
+  regimenKind?: unknown
   startDate?: unknown
   scheduledLocalTime?: unknown
 }
 
 export async function regimenSave(context: AppContext, payload: SaveRegimenPayload) {
+  const regimenKind = payload.regimenKind === undefined ? 'standard_21_7' : payload.regimenKind
+  if (!isRegimenKind(regimenKind)) throw new BusinessError('INVALID_REGIMEN_KIND', '请选择有效的服药方案')
   assertString(payload.startDate, 'INVALID_DATE', '请选择有效的药板开始日期')
   assertString(payload.scheduledLocalTime, 'INVALID_TIME', '请选择有效的提醒时间')
   const startDate = parseLocalDate(payload.startDate)
@@ -48,12 +59,15 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
   const regimenId = current?.effectiveFrom === today
     ? current._id
     : stableId(context.userId, 'regimen', context.requestId)
+  const cycle = cycleForRegimenKind(regimenKind)
   const regimen: RegimenDocument = {
     _id: regimenId,
     ownerUserId: context.userId,
+    regimenKind,
     startDate,
-    activeDays: 21,
-    breakDays: 7,
+    activeDays: cycle.activeDays,
+    placeboDays: cycle.placeboDays,
+    breakDays: cycle.breakDays,
     scheduledLocalTime: payload.scheduledLocalTime,
     timezone: 'Asia/Shanghai',
     effectiveFrom,
@@ -101,6 +115,15 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
           }
         })
       }
+    }
+  }
+
+  const templateId = process.env.SELF_DUE_TEMPLATE_ID
+  if (templateId && templateId !== 'configure-in-cloud-console') {
+    try {
+      await allocateAvailableGrants(context, templateId)
+    } catch {
+      console.error(JSON.stringify({ event: 'grant.reallocation_after_plan_change_failed', requestId: context.requestId }))
     }
   }
 

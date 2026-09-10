@@ -1,15 +1,30 @@
 import { localDateInTimeZone, parseLocalDate } from '../../domain/local-date'
 import { callApi, createRequestId } from '../../services/api-client'
-import type { BootstrapDto } from '../../services/api-types'
+import type { BootstrapDto, RegimenKind } from '../../services/api-types'
 import {
   registerAcceptedSubscription,
   requestSelfDueSubscription,
 } from '../../services/subscription'
 import { formatFullLocalDate } from '../../utils/display'
 
+const regimenOptions: Array<{ value: RegimenKind; title: string; description: string }> = [
+  {
+    value: 'standard_21_7',
+    title: '21 + 7',
+    description: '连续服药 21 天，随后停药 7 天',
+  },
+  {
+    value: 'yaz_24_4',
+    title: '优思悦 24 + 4',
+    description: '24 片浅粉色含药片，随后 4 片白色安慰剂片',
+  },
+]
+
 Page({
   data: {
     today: localDateInTimeZone(new Date()),
+    regimenKind: 'standard_21_7' as RegimenKind,
+    regimenOptions,
     startDate: localDateInTimeZone(new Date()),
     startDateLabel: formatFullLocalDate(localDateInTimeZone(new Date())),
     scheduledLocalTime: '22:30',
@@ -31,6 +46,7 @@ Page({
       const editableRegimen = data.pendingRegimen ?? data.regimen
       if (!editableRegimen) return
       this.setData({
+        regimenKind: editableRegimen.regimenKind,
         startDate: parseLocalDate(editableRegimen.startDate),
         startDateLabel: formatFullLocalDate(editableRegimen.startDate),
         scheduledLocalTime: editableRegimen.scheduledLocalTime,
@@ -41,6 +57,12 @@ Page({
     } catch (error) {
       this.setData({ errorMessage: error instanceof Error ? error.message : '读取计划失败' })
     }
+  },
+
+  selectRegimen(event: WechatMiniprogram.TouchEvent) {
+    const regimenKind = String(event.currentTarget.dataset.kind)
+    if (regimenKind !== 'standard_21_7' && regimenKind !== 'yaz_24_4') return
+    this.setData({ regimenKind })
   },
 
   onDateChange(event: WechatMiniprogram.PickerChange) {
@@ -63,6 +85,7 @@ Page({
       await callApi(
         'regimen.save',
         {
+          regimenKind: this.data.regimenKind,
           startDate: this.data.startDate,
           scheduledLocalTime: this.data.scheduledLocalTime,
         },

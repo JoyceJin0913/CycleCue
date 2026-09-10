@@ -1,17 +1,36 @@
 <view class="page setup-page">
-  <view class="eyebrow">V1 · 21+7</view>
+  <view class="eyebrow">服药计划</view>
   <view class="title">设置服药计划</view>
-  <view class="intro muted">告诉 CycleCue 当前药板从哪天开始，以及你每天希望几点收到微信提醒。</view>
+  <view class="intro muted">选择与你药板一致的方案，并设置第一片日期和每天的提醒时间。</view>
   <view wx:if="{{isEditing}}" class="edit-hint">{{effectiveHint || '保存后立即按新计划计算；今天已有的记录会保留。'}}</view>
 
   <view class="card form-card">
-    <view class="field">
+    <view class="field regimen-field">
       <view class="label">方案</view>
-      <view class="fixed-value">连续服药 21 天，停药 7 天</view>
+      <view class="regimen-options">
+        <view
+          wx:for="{{regimenOptions}}"
+          wx:key="value"
+          class="regimen-option {{regimenKind === item.value ? 'selected' : ''}}"
+          data-kind="{{item.value}}"
+          aria-role="radio"
+          aria-checked="{{regimenKind === item.value}}"
+          bindtap="selectRegimen"
+        >
+          <view class="regimen-option-copy">
+            <view class="regimen-option-title">{{item.title}}</view>
+            <view class="regimen-option-description">{{item.description}}</view>
+          </view>
+          <view class="regimen-check">{{regimenKind === item.value ? '✓' : ''}}</view>
+        </view>
+      </view>
+      <view wx:if="{{regimenKind === 'yaz_24_4'}}" class="regimen-note">
+        优思悦需要按药板顺序每天服用；第 25–28 片是白色安慰剂片，服完后直接开始下一板。具体请以你的药盒说明书和医生指导为准。
+      </view>
     </view>
 
     <view class="field">
-      <view class="label">当前药板第一天</view>
+      <view class="label">当前药板第一片日期</view>
       <picker mode="date" value="{{startDate}}" end="{{today}}" bindchange="onDateChange">
         <view class="picker-value"><text>{{startDateLabel}}</text><text class="picker-arrow">›</text></view>
       </picker>
@@ -25,7 +44,12 @@
     </view>
   </view>
 
-  <view class="preview">从 {{startDateLabel}} 开始，连续 21 天每天 {{scheduledLocalTime}} 记录，之后停 7 天。</view>
+  <view wx:if="{{regimenKind === 'yaz_24_4'}}" class="preview">
+    从 {{startDateLabel}} 开始：前 24 天服用浅粉色片，后 4 天服用白色片；每天 {{scheduledLocalTime}} 提醒。
+  </view>
+  <view wx:else class="preview">
+    从 {{startDateLabel}} 开始：连续服药 21 天，停药 7 天；服药日 {{scheduledLocalTime}} 提醒。
+  </view>
 
   <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">
     {{isEditing ? '保存修改并开启提醒' : '保存并开启下一次微信提醒'}}

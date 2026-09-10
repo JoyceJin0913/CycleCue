@@ -10,9 +10,11 @@ import { formatChinaTimestamp, formatShortLocalDate } from '../../utils/display'
 const emptyToday: TodayDto = {
   localDate: '',
   displayDate: '',
+  regimenKind: 'standard_21_7',
   planStatus: 'before_start',
   viewState: 'before_start',
   cycleDay: null,
+  cycleLength: 28,
   scheduledLocalTime: '',
   nextActiveDate: null,
   recordStatus: null,
@@ -20,6 +22,17 @@ const emptyToday: TodayDto = {
   lastChangedAt: null,
   evidenceType: 'none',
   evidenceFileId: null,
+}
+
+function tabletLabel(today: TodayDto): string {
+  if (today.regimenKind !== 'yaz_24_4') return ''
+  return today.planStatus === 'placebo' ? '白色安慰剂片' : '浅粉色含药片'
+}
+
+function doseKicker(today: TodayDto): string {
+  return today.regimenKind === 'yaz_24_4'
+    ? `优思悦 · 本板第 ${today.cycleDay ?? '-'} 片`
+    : `本周期第 ${today.cycleDay ?? '-'} 天`
 }
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024
@@ -52,13 +65,31 @@ function stateCopy(today: TodayDto): { kicker: string; title: string; descriptio
         description: `下次服药：${formatShortLocalDate(today.nextActiveDate, today.localDate)}`,
       }
     case 'taken':
-      return { kicker: '今日记录', title: '今天已记录', description: '状态：已服' }
+      return {
+        kicker: tabletLabel(today) || '今日记录',
+        title: '今天已记录',
+        description: tabletLabel(today) ? `已服用 · ${tabletLabel(today)}` : '状态：已服',
+      }
     case 'not_taken':
-      return { kicker: '今日记录', title: '今天记录为未服', description: '这里只记录事实，不提供医学判断' }
+      return {
+        kicker: tabletLabel(today) || '今日记录',
+        title: '今天记录为未服',
+        description: tabletLabel(today)
+          ? `${tabletLabel(today)} · 这里只记录事实，不提供医学判断`
+          : '这里只记录事实，不提供医学判断',
+      }
     case 'unrecorded_overdue':
-      return { kicker: '已到计划时间', title: '今天尚未记录', description: `计划时间 ${today.scheduledLocalTime}` }
+      return {
+        kicker: doseKicker(today),
+        title: '今天尚未记录',
+        description: `${tabletLabel(today) ? `${tabletLabel(today)} · ` : ''}计划时间 ${today.scheduledLocalTime}`,
+      }
     case 'future':
-      return { kicker: `本周期第 ${today.cycleDay ?? '-'} 天`, title: '今天需要服药', description: `计划时间 ${today.scheduledLocalTime}` }
+      return {
+        kicker: doseKicker(today),
+        title: today.planStatus === 'placebo' ? '今天服用白色片' : '今天需要服药',
+        description: `${tabletLabel(today) ? `${tabletLabel(today)} · ` : ''}计划时间 ${today.scheduledLocalTime}`,
+      }
   }
 }
 

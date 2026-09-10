@@ -48,13 +48,81 @@
   font-size: 24rpx;
 }
 
-.fixed-value,
 .picker-value {
   font-size: 31rpx;
 }
 
-.fixed-value {
-  line-height: 1.5;
+.regimen-field {
+  padding-bottom: 28rpx;
+}
+
+.regimen-option {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 24rpx;
+  border: 2rpx solid #e5dfda;
+  border-radius: 20rpx;
+  background: #fcfaf7;
+}
+
+.regimen-option + .regimen-option {
+  margin-top: 16rpx;
+}
+
+.regimen-option.selected {
+  border-color: #735a9d;
+  background: #f5f0fa;
+  box-shadow: 0 8rpx 22rpx rgba(115, 90, 157, 0.1);
+}
+
+.regimen-option-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.regimen-option-title {
+  font-size: 29rpx;
+  font-weight: 650;
+}
+
+.regimen-option-description {
+  margin-top: 7rpx;
+  color: #77716b;
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.regimen-check {
+  display: flex;
+  width: 38rpx;
+  height: 38rpx;
+  flex: 0 0 38rpx;
+  align-items: center;
+  justify-content: center;
+  margin-left: 18rpx;
+  border: 2rpx solid #d8d0ca;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 23rpx;
+  line-height: 1;
+}
+
+.regimen-option.selected .regimen-check {
+  border-color: #735a9d;
+  background: #735a9d;
+}
+
+.regimen-note {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
+  background: #f3f6f1;
+  color: #5a765f;
+  font-size: 23rpx;
+  line-height: 1.55;
 }
 
 .picker-value {
