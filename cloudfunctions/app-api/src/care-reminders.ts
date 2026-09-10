@@ -93,7 +93,7 @@ export async function registerCareOverdueSubscription(
   if (source !== 'care_manual') {
     throw new BusinessError('INVALID_SUBSCRIPTION', '朋友提醒授权信息无效')
   }
-  const templateId = process.env.CAREGIVER_OVERDUE_TEMPLATE_ID
+  const templateId = process.env.CAREGIVER_OVERDUE_TEMPLATE_ID ?? process.env.SELF_DUE_TEMPLATE_ID
   if (!templateId || templateId === 'configure-in-cloud-console') {
     throw new BusinessError('TEMPLATE_NOT_CONFIGURED', '朋友提醒模板尚未配置')
   }
@@ -232,6 +232,7 @@ async function scheduleCareGrant(context: AppContext, link: CareLinkDocument, gr
     jobKind: 'care_overdue' as const,
     recipientUserId: link.caregiverUserId,
     subjectUserId: link.ownerUserId,
+    subjectLabel: link.ownerLabel,
     careLinkId: link._id,
     regimenVersionId: candidate.regimenVersionId,
     occurrenceId: candidate.occurrenceId,

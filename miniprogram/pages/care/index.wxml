@@ -85,8 +85,8 @@
     </view>
 
     <view class="card invite-card">
-      <view class="field-label">朋友看到的称呼</view>
-      <input class="name-input" maxlength="12" value="{{ownerLabel}}" bindinput="onOwnerLabelInput" />
+      <view class="field-label">朋友提醒里显示的称呼</view>
+      <input class="name-input" maxlength="12" placeholder="可填写微信昵称或熟悉的称呼" value="{{ownerLabel}}" bindinput="onOwnerLabelInput" />
       <view class="muted small">还可邀请 {{remainingInviteSlots}} 人 · 链接 48 小时内有效</view>
       <button wx:if="{{!inviteToken}}" class="primary-button" loading="{{generatingInvite}}" disabled="{{generatingInvite || remainingInviteSlots <= 0}}" bindtap="prepareInvite">生成邀请</button>
       <button wx:else class="primary-button share-button" open-type="share">发送给微信好友</button>

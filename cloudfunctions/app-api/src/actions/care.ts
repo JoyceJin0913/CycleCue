@@ -172,8 +172,8 @@ export async function careList(context: AppContext) {
     caregivers,
     watching,
     reminderTemplateConfigured: Boolean(
-      process.env.CAREGIVER_OVERDUE_TEMPLATE_ID &&
-      process.env.CAREGIVER_OVERDUE_TEMPLATE_ID !== 'configure-in-cloud-console'
+      (process.env.CAREGIVER_OVERDUE_TEMPLATE_ID ?? process.env.SELF_DUE_TEMPLATE_ID) &&
+      (process.env.CAREGIVER_OVERDUE_TEMPLATE_ID ?? process.env.SELF_DUE_TEMPLATE_ID) !== 'configure-in-cloud-console'
     ),
     remainingInviteSlots: Math.max(0, MAX_ACTIVE_CAREGIVERS - ownerResult.data.length),
   }

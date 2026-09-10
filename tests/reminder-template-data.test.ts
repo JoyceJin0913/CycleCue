@@ -42,20 +42,35 @@ test('caregiver reminders reveal neither the medicine nor photo details', () => 
     templateKey: 'CAREGIVER_OVERDUE',
     regimenKind: 'yaz_24_4',
     careState: 'notify_unrecorded',
+    subjectLabel: 'Joyce',
   })
   const notTaken = buildTemplateData({
     localDate: '2026-09-11',
     scheduledLocalTime: '23:00',
     templateKey: 'CAREGIVER_OVERDUE',
     careState: 'notify_not_taken',
+    subjectLabel: 'Joyce',
   })
 
   assert.deepEqual(unrecorded, {
-    thing1: { value: '好友每日记录' },
+    thing1: { value: '每日用药' },
     time15: { value: '2026-09-11 23:00' },
-    thing5: { value: '对方尚未完成记录，请联系确认' },
+    thing5: { value: 'Joyce仍未完成记录，请提醒' },
   })
-  assert.equal(notTaken.thing5.value, '对方已记录为未服，请联系确认')
+  assert.equal(notTaken.thing5.value, 'Joyce已记录今日未服，请联系')
   assert.equal(JSON.stringify(unrecorded).includes('优思悦'), false)
   assert.equal(JSON.stringify(unrecorded).includes('照片'), false)
+})
+
+test('caregiver reminder labels stay inside the thing field limit', () => {
+  const result = buildTemplateData({
+    localDate: '2026-09-11',
+    scheduledLocalTime: '23:00',
+    templateKey: 'CAREGIVER_OVERDUE',
+    careState: 'notify_unrecorded',
+    subjectLabel: '这是一个非常非常长的微信昵称',
+  })
+
+  assert.equal(Array.from(result.thing5.value).length <= 20, true)
+  assert.equal(result.thing5.value, '这是一个非常非常仍未完成记录，请提醒')
 })
