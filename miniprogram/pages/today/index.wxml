@@ -26,12 +26,13 @@
     <block wx:if="{{showRecordActions}}">
       <block wx:if="{{pendingPhotoPath}}">
         <image class="pending-photo" src="{{pendingPhotoPath}}" mode="aspectFill" bindtap="previewPhoto" />
-        <button class="primary-button main-action" loading="{{savingPhoto}}" disabled="{{savingPhoto}}" bindtap="confirmPhotoTaken">使用照片并记录</button>
+        <view class="photo-pending-label">照片尚未保存</view>
+        <button class="primary-button main-action" loading="{{savingPhoto}}" disabled="{{savingPhoto}}" bindtap="confirmPhotoTaken">保存照片并确认已服</button>
         <button class="secondary-button" disabled="{{savingPhoto}}" bindtap="takePhoto">重新拍照</button>
         <button class="secondary-button quiet-action" disabled="{{savingPhoto}}" bindtap="cancelPhoto">取消</button>
       </block>
       <block wx:else>
-        <button class="primary-button main-action photo-action" loading="{{choosingPhoto}}" disabled="{{choosingPhoto}}" bindtap="takePhoto">📷 今日拍照片</button>
+        <button class="primary-button main-action photo-action" loading="{{choosingPhoto}}" disabled="{{choosingPhoto}}" bindtap="takePhoto">📷 拍照记录今日服药</button>
         <button class="secondary-button" bindtap="confirmTaken">无照片确认已服</button>
       </block>
       <button class="secondary-button" bindtap="markNotTaken">记录今天未服</button>
@@ -40,7 +41,8 @@
     <block wx:if="{{showEditRecord}}">
       <block wx:if="{{pendingPhotoPath}}">
         <image class="pending-photo" src="{{pendingPhotoPath}}" mode="aspectFill" bindtap="previewPhoto" />
-        <button class="primary-button main-action" loading="{{savingPhoto}}" disabled="{{savingPhoto}}" bindtap="confirmPhotoTaken">使用照片并记录</button>
+        <view class="photo-pending-label">替换照片尚未保存</view>
+        <button class="primary-button main-action" loading="{{savingPhoto}}" disabled="{{savingPhoto}}" bindtap="confirmPhotoTaken">保存并替换今日照片</button>
         <button class="secondary-button quiet-action" disabled="{{savingPhoto}}" bindtap="cancelPhoto">取消</button>
       </block>
       <block wx:else>

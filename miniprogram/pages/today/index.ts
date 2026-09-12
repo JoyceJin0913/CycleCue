@@ -115,6 +115,9 @@ Page({
 
   onShow() {
     void flushPendingSubscriptions()
+    // The native camera temporarily hides and shows the mini program. Avoid
+    // starting a refresh that can race with chooseMedia and clear its result.
+    if (this.data.choosingPhoto || this.data.savingPhoto) return
     void this.refresh()
   },
 
@@ -148,6 +151,7 @@ Page({
       ? `${formatShortLocalDate(reminder.localDate, today.localDate)} ${reminder.scheduledLocalTime}`
       : '下一次微信提醒未开启'
 
+    const pendingPhotoPath = this.data.pendingPhotoPath
     this.setData({
       loading: false,
       today,
@@ -159,8 +163,10 @@ Page({
       recordedTimeText: timestamp ? `记录于 ${formatChinaTimestamp(timestamp, today.localDate)}` : '',
       showRecordActions,
       showEditRecord,
-      pendingPhotoPath: '',
-      pendingPhotoSize: 0,
+      // A refresh may have started when the native camera returned. Preserve
+      // the newly selected local photo until the user saves or cancels it.
+      pendingPhotoPath,
+      pendingPhotoSize: pendingPhotoPath ? this.data.pendingPhotoSize : 0,
       photoTempUrl: '',
     })
     if (today.evidenceFileId) void this.resolvePhotoUrl(today.evidenceFileId)
@@ -205,7 +211,7 @@ Page({
   },
 
   previewPhoto() {
-    const url = this.data.photoTempUrl || this.data.pendingPhotoPath
+    const url = this.data.pendingPhotoPath || this.data.photoTempUrl
     if (url) wx.previewImage({ current: url, urls: [url] })
   },
 

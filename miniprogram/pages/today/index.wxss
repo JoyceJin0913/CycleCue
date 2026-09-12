@@ -111,6 +111,16 @@
   margin-top: 24rpx;
 }
 
+.photo-pending-label {
+  margin-top: 18rpx;
+  color: #8a8179;
+  font-size: 24rpx;
+}
+
+.photo-pending-label + .main-action {
+  margin-top: 20rpx;
+}
+
 .photo-badge {
   margin-top: 36rpx;
   color: #5a765f;
