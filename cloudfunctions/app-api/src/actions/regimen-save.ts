@@ -11,6 +11,7 @@ import { BusinessError, assertString } from '../errors'
 import {
   claimIdempotency,
   completeIdempotency,
+  effectiveToForPlanCorrection,
   ensureUser,
   getDocument,
   listRegimens,
@@ -53,13 +54,14 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
   const currentCandidates = regimens.filter(
     (item) => item.effectiveFrom <= today && (item.effectiveTo === undefined || today < item.effectiveTo),
   )
-  const current = currentCandidates[currentCandidates.length - 1]
-  const future = regimens.filter((item) => item.effectiveFrom > today)
-  const isFirstPlan = regimens.length === 0
-  const effectiveFrom = isFirstPlan ? startDate : today
-  const regimenId = current?.effectiveFrom === today
-    ? current._id
-    : stableId(context.userId, 'regimen', context.requestId)
+  const current = [...regimens].reverse().find((item) => item.status === 'active')
+    ?? currentCandidates[currentCandidates.length - 1]
+  const effectiveFrom = startDate
+  const regimenId = current?._id ?? stableId(context.userId, 'regimen', context.requestId)
+  const correctedPriorVersions = regimens
+    .filter((item) => item._id !== regimenId)
+    .map((item) => ({ item, effectiveTo: effectiveToForPlanCorrection(item, effectiveFrom) }))
+    .filter((entry): entry is { item: RegimenDocument; effectiveTo: string } => entry.effectiveTo !== null)
   const cycle = cycleForRegimenKind(regimenKind)
   const regimen: RegimenDocument = {
     _id: regimenId,
@@ -73,17 +75,14 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
     timezone: 'Asia/Shanghai',
     effectiveFrom,
     status: 'active',
-    createdAt: current?.effectiveFrom === today ? current.createdAt : context.serverNow,
+    createdAt: current?.createdAt ?? context.serverNow,
   }
 
   await context.db.runTransaction(async (transaction: any) => {
-    if (current && current._id !== regimenId) {
-      await transaction.collection('regimen_versions').doc(current._id).update({
-        data: { effectiveTo: effectiveFrom, status: 'superseded' },
+    for (const prior of correctedPriorVersions) {
+      await transaction.collection('regimen_versions').doc(prior.item._id).update({
+        data: { effectiveTo: prior.effectiveTo, status: 'superseded' },
       })
-    }
-    for (const pending of future) {
-      await transaction.collection('regimen_versions').doc(pending._id).remove()
     }
     await transaction.collection('regimen_versions').doc(regimenId).set({ data: withoutDocumentId(regimen) })
     await transaction.collection('users').doc(context.userId).update({
@@ -91,7 +90,10 @@ export async function regimenSave(context: AppContext, payload: SaveRegimenPaylo
     })
   })
 
-  const replacedRegimenIds = [current?._id, ...future.map((item) => item._id)].filter(Boolean) as string[]
+  const replacedRegimenIds = Array.from(new Set([
+    current?._id,
+    ...correctedPriorVersions.map((entry) => entry.item._id),
+  ].filter(Boolean) as string[]))
   if (replacedRegimenIds.length > 0) {
     const newPlanStartsAt = localDateTimeToUtc(effectiveFrom, '00:00')
     for (const replacedRegimenId of replacedRegimenIds) {

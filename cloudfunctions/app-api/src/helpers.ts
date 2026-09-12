@@ -92,6 +92,14 @@ export function regimenForDate(regimens: RegimenDocument[], localDate: string): 
   )
 }
 
+export function effectiveToForPlanCorrection(
+  regimen: Pick<RegimenDocument, 'effectiveFrom' | 'effectiveTo'>,
+  correctionStart: string,
+): string | null {
+  if (regimen.effectiveTo !== undefined && regimen.effectiveTo <= correctionStart) return null
+  return regimen.effectiveFrom < correctionStart ? correctionStart : regimen.effectiveFrom
+}
+
 export async function claimIdempotency(
   context: AppContext,
   action: string,

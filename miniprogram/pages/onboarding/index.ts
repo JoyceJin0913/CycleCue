@@ -50,9 +50,7 @@ Page({
         startDate: parseLocalDate(editableRegimen.startDate),
         startDateLabel: formatFullLocalDate(editableRegimen.startDate),
         scheduledLocalTime: editableRegimen.scheduledLocalTime,
-        effectiveHint: data.pendingRegimen
-          ? '存在一份尚未生效的旧修改，本次保存会替换它并立即生效。'
-          : '保存后立即按新计划计算；今天已有的服药记录和照片会保留。',
+        effectiveHint: '保存后会从当前药板第一片日期重新计算整份日历；已有的事实记录和照片会保留。',
       })
     } catch (error) {
       this.setData({ errorMessage: error instanceof Error ? error.message : '读取计划失败' })

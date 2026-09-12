@@ -293,13 +293,13 @@ V1 不引入宽限期，也不区分医学意义上的“迟服”。如果在�
 ### 6.5 修改方案
 
 1. 从今日页点击“计划设置”。
-2. 复用首次设置页，展示当前开始日期和每日时间。
-3. 保存时创建新方案版本，不覆盖旧版本。
-4. 保存后从今天立即生效；今天已有的事实记录和照片继续保留。
-5. 取消旧版本从今天起尚未发送的提醒任务，并移除尚未生效的旧修改。
-6. 如果用户在保存点击中同意订阅，为新版本安排下一次提醒。
+2. 复用首次设置页，明确标为“修正当前药板”，展示方案、当前药板第一片日期和每日时间。
+3. 保存时复用当前 active version 的 ID，并令 `effectiveFrom = startDate`，从当前药板第一片日期重新计算整份日历。
+4. 不删除 `dose_records` 或已绑定照片。事实记录继续保留；如果某个日期经修正后成为停药日，月历按修正后的计划显示停药日，原事实仍留在云端供审计。
+5. 与修正日期区间重叠的旧错误版本保留在数据库，但截断为不再覆盖任何相关日期并标记为 `superseded`；更早且不重叠的历史版本保持不变。
+6. 取消受影响版本尚未发送的提醒任务，释放未消费授权，再按修正后的计划重新安排下一次本人和朋友提醒。
 
-版本区间采用左闭右开 `[effectiveFrom, effectiveTo)`：首次版本 `effectiveFrom = startDate`；之后修改的版本 `effectiveFrom = today`，旧版本的 `effectiveTo` 等于今天。只修改提醒时间时保留用户选择的药板第一天；修改药板第一天时要求 `startDate <= today`。同一天重复修改直接更新当天版本，避免产生重叠区间。月历按每个日格分别选择覆盖该日期的版本，不能只读取当前 active version。
+版本区间采用左闭右开 `[effectiveFrom, effectiveTo)`。V1 的“计划设置”只表达当前药板纠错，不能把它隐式解释为“今天开始一份新方案”。未来如需保留过去日历并从指定日期切换新药板，应提供独立的“开始新药板”操作和明确生效日期。月历按每个日格分别选择覆盖该日期的版本，不能只读取当前 active version。
 
 ## 7. 周期算法
 
@@ -610,7 +610,7 @@ V1 actions：
 | Action | 输入摘要 | 输出摘要 |
 |---|---|---|
 | `bootstrap.get` | 无 | 用户初始化状态、当前方案、今日状态、提醒覆盖 |
-| `regimen.save` | startDate、scheduledLocalTime | 新方案版本、今日状态 |
+| `regimen.save` | regimenKind、startDate、scheduledLocalTime | 修正后的当前方案、今日状态 |
 | `dose.setToday` | `taken` 或 `not_taken` | occurrence、firstRecordedAt、lastChangedAt |
 | `photo.prepareUpload` | 文件扩展名、大小 | 一小时有效的 owner-only 上传票据 |
 | `dose.getMonth` | `YYYY-MM` | 42 个日格状态 |
@@ -627,6 +627,24 @@ V1 actions：
 服务端不接受客户端提供的 `openId`、`ownerId` 或任意 occurrenceId 作为可信身份。今日 occurrence 由服务端按当前方案和日期计算；朋友跨用户读取必须先验证有效 `care_links`，响应永不返回照片字段。
 
 ## 11. 数据模型
+
+### 11.0 云端存储与用户隔离
+
+V1 使用同一个 CloudBase 环境和同一组集合承载所有测试用户的数据，不为每位用户建立独立数据库。云函数从微信运行上下文取得 `OPENID`，再以服务端 HMAC 派生不可枚举的内部 `userId`；业务集合通过 `ownerUserId`、`recipientUserId` 或 `caregiverUserId` 关联到对应用户。
+
+小程序客户端不能直接读写数据库，所有请求统一经过 `app-api` 做身份校验和资源归属校验。用户只能读取或修改自己的计划、记录与照片；朋友只能在有效 `care_links` 授权范围内读取裁剪后的状态，不能读取照片或完整健康记录。
+
+云端持久化范围如下：
+
+- `users` 保存小程序身份映射和当前方案指针；
+- `regimen_versions` 保存每位用户的方案、当前药板第一片日期和提醒时间；
+- `dose_records` 保存每位用户每天的已服/未服事实；
+- `photo_uploads` 保存照片票据和绑定状态，照片文件本体保存在私有云存储；
+- `care_invites`、`care_links` 保存邀请和朋友关系；
+- `subscription_grants`、`reminder_jobs` 保存一次性订阅授权与提醒任务；
+- `idempotency_requests` 防止网络重试造成重复写入。
+
+微信号、微信昵称、头像和手机号不会被小程序自动取得或保存。朋友页中的称呼是用户主动填写的应用内称呼，不能作为微信账号标识。原始 `OPENID` 只保存在仅云函数可访问的 `users` 集合中，用于识别用户及发送订阅消息。
 
 ### 11.1 `users`
 

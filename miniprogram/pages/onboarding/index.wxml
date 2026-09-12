@@ -1,8 +1,8 @@
 <view class="page setup-page">
   <view class="eyebrow">服药计划</view>
-  <view class="title">设置服药计划</view>
-  <view class="intro muted">选择与你药板一致的方案，并设置第一片日期和每天的提醒时间。</view>
-  <view wx:if="{{isEditing}}" class="edit-hint">{{effectiveHint || '保存后立即按新计划计算；今天已有的记录会保留。'}}</view>
+  <view class="title">{{isEditing ? '修正当前药板' : '设置服药计划'}}</view>
+  <view class="intro muted">选择与你药板一致的方案，并设置当前药板第一片日期和每天的提醒时间。</view>
+  <view wx:if="{{isEditing}}" class="edit-hint">{{effectiveHint || '保存后会从第一片日期重新计算整份日历；已有记录和照片会保留。'}}</view>
 
   <view class="card form-card">
     <view class="field regimen-field">
@@ -52,7 +52,7 @@
   </view>
 
   <button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="save">
-    {{isEditing ? '保存修改并开启提醒' : '保存并开启下一次微信提醒'}}
+    {{isEditing ? '保存并重新计算日历' : '保存并开启下一次微信提醒'}}
   </button>
   <view wx:if="{{errorMessage}}" class="error error-message">{{errorMessage}}</view>
 </view>
